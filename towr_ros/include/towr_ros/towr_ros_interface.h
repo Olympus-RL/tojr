@@ -41,6 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr_ros/TowrCommand.h>
 
 #include <towr/nlp_formulation.h>
+//#include <towr/variables/jump_duration.h>
 #include <ifopt/ipopt_solver.h>
 
 
@@ -91,6 +92,7 @@ private:
   SplineHolder solution; ///< the solution splines linked to the opt-variables.
   ifopt::Problem nlp_;   ///< the actual nonlinear program to be solved.
   double visualization_dt_; ///< duration between two rviz visualization states.
+  JumpDuration::Ptr jump_duration_;    ///< duration of the jump phase.
 
   ::ros::Subscriber user_command_sub_;
   ::ros::Publisher initial_state_pub_;

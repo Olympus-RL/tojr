@@ -100,10 +100,14 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
   // Defaults to /home/user/.ros/
   std::string bag_file = "towr_trajectory.bag";
+  #include <towr/variables/jump_duration.h> // Include the header file for the JumpDuration class
+  #include <ifopt/problem.h> // Include the header file for the ifopt::Problem class
+
   if (msg.optimize || msg.play_initialization) {
     nlp_ = ifopt::Problem();
-    for (auto c : formulation_.GetVariableSets(solution))
+    for (auto c : formulation_.GetVariableSets(solution)) {
       nlp_.AddVariableSet(c);
+    }
     for (auto c : formulation_.GetConstraints(solution))
       nlp_.AddConstraintSet(c);
     for (auto c : formulation_.GetCosts())
@@ -167,11 +171,10 @@ TowrRosInterface::GetTrajectory () const
   XppVec trajectory;
   double t = 0.0;
   double T = solution.base_linear_->GetTotalTime();
-
+  double T_jump = nlp_.GetOptVariables() -> GetComponent<towr::JumpDuration>("jump_duration") -> GetValues()(0);
   EulerConverter base_angular(solution.base_angular_);
-
+  int n_ee = solution.ee_motion_.size();
   while (t<=T+1e-5) {
-    int n_ee = solution.ee_motion_.size();
     xpp::RobotStateCartesian state(n_ee);
 
     state.base_.lin = ToXpp(solution.base_linear_->GetPoint(t));
@@ -191,6 +194,48 @@ TowrRosInterface::GetTrajectory () const
     state.t_global_ = t;
     trajectory.push_back(state);
     t += visualization_dt_;
+  }
+  towr::State::VectorXd takeoff_pos = solution.base_linear_->GetPoint(solution.base_linear_->GetTotalTime()).p();
+  towr::State::VectorXd takeoff_vel = solution.base_linear_->GetPoint(solution.base_linear_->GetTotalTime()).v();
+  towr::State::VectorXd takeoff_ang = solution.base_angular_->GetPoint(solution.base_angular_->GetTotalTime()).p();
+  
+  xpp::RobotStateCartesian takeoff_state(n_ee);
+  takeoff_state.base_.lin = ToXpp(solution.base_linear_->GetPoint(T));
+  takeoff_state.base_.ang.q  = base_angular.GetQuaternionBaseToWorld(T);
+  takeoff_state.base_.ang.w  = base_angular.GetAngularVelocityInWorld(T);
+  takeoff_state.base_.ang.wd = base_angular.GetAngularAccelerationInWorld(T);
+
+
+  t = 0;
+  double g = formulation_.model_.dynamic_model_->g();
+  while (t<=T_jump+1e-5) {
+    xpp::RobotStateCartesian state = takeoff_state;
+
+    int n_ee = solution.ee_motion_.size();
+    double dx = takeoff_vel.x()*t;
+    double dy = takeoff_vel.y()*t;
+    double dz = takeoff_vel.z()*t - 0.5*g*std::pow(t,2);
+
+    state.base_.lin.p_.x() += dx;
+    state.base_.lin.p_.y() += dy;
+    state.base_.lin.p_.z() += dz;
+
+    for (int ee_towr=0; ee_towr<n_ee; ++ee_towr) {
+      int ee_xpp = ToXppEndeffector(n_ee, ee_towr).first;
+      state.ee_contact_.at(ee_xpp) = false;
+      state.ee_motion_.at(ee_xpp).p_.x() += dx;
+      state.ee_motion_.at(ee_xpp).p_.y() += dy;
+      state.ee_motion_.at(ee_xpp).p_.z() += dz;
+      state.ee_forces_ .at(ee_xpp) = Vector3d(0,0,0);
+    }
+
+    state.t_global_ = t + T;
+    trajectory.push_back(state);
+    t += visualization_dt_;
+
+
+
+    
   }
 
   return trajectory;

@@ -91,6 +91,12 @@ public:
                   const EELoad& force_W, const EEPos& pos_W);
 
   /**
+   * @brief Sets the gravity acceleration.
+   * @param g  The gravity acceleration [m/s^2] (positive).
+   */
+  void SetGravity(double g) { g_ = g; };
+
+  /**
    * @brief  The violation of the system dynamics incurred by the current values.
    * @return The 6-dimension generalized force violation (angular + linear).
    */

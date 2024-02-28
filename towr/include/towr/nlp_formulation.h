@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#ifndef TOWR_NLP_FACTORY_H_
-#define TOWR_NLP_FACTORY_H_
+#ifndef NLP_FACTORY_H_
+#define NLP_FACTORY_H_
 
 #include <ifopt/variable_set.h>
 #include <ifopt/constraint_set.h>
@@ -38,6 +38,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/models/robot_model.h>
 #include <towr/terrain/height_map.h>
 #include <towr/parameters.h>
+#include <towr/variables/jump_duration.h>
+
+
+
 
 namespace towr {
 
@@ -96,13 +100,12 @@ public:
   /** @brief The ifopt costs to tune the motion. */
   ContraintPtrVec GetCosts() const;
 
-
   BaseState initial_base_;
-  BaseState final_base_;
   EEPos  initial_ee_W_;
   RobotModel model_;
   HeightMap::Ptr terrain_;
   Parameters params_;
+  double jump_length_;
 
 private:
   // variables
@@ -110,6 +113,7 @@ private:
   std::vector<NodesVariablesPhaseBased::Ptr> MakeEndeffectorVariables() const;
   std::vector<NodesVariablesPhaseBased::Ptr> MakeForceVariables() const;
   std::vector<PhaseDurations::Ptr> MakeContactScheduleVariables() const;
+  std::vector<JumpDuration::Ptr> MakeJumpDurationVariables() const;
 
   // constraints
   ContraintPtrVec GetConstraint(Parameters::ConstraintName name,
@@ -122,6 +126,7 @@ private:
   ContraintPtrVec MakeSwingConstraint() const;
   ContraintPtrVec MakeBaseRangeOfMotionConstraint(const SplineHolder& s) const;
   ContraintPtrVec MakeBaseAccConstraint(const SplineHolder& s) const;
+  ContraintPtrVec MakeJumpConstraint(const SplineHolder& s) const;
 
   // costs
   CostPtrVec GetCost(const Parameters::CostName& id, double weight) const;
@@ -132,3 +137,4 @@ private:
 } /* namespace towr */
 
 #endif /* TOWR_NLP_FACTORY_H_ */
+

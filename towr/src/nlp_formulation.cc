@@ -44,6 +44,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/costs/node_cost.h>
 #include <towr/variables/nodes_variables_all.h>
 
+#include <towr/constraints/jump_constraint.h>
+#include <towr/variables/jump_duration.h>
+
+
 #include <iostream>
 
 namespace towr {
@@ -64,7 +68,8 @@ NlpFormulation::VariablePtrVec
 NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
 {
   VariablePtrVec vars;
-
+  auto jump_duration = MakeJumpDurationVariables();
+  vars.insert(vars.end(), jump_duration.begin(), jump_duration.end());
   auto base_motion = MakeBaseVariables();
   vars.insert(vars.end(), base_motion.begin(), base_motion.end());
 
@@ -100,25 +105,31 @@ NlpFormulation::MakeBaseVariables () const
   int n_nodes = params_.GetBasePolyDurations().size() + 1;
 
   auto spline_lin = std::make_shared<NodesVariablesAll>(n_nodes, k3D, id::base_lin_nodes);
+  // should make new initial positions based on jump height
+  Vector3d takeoff_pos;
+  takeoff_pos(0) = initial_base_.lin.p().x();
+  takeoff_pos(1) = initial_base_.lin.p().y();
+  double max_z = terrain_->GetHeight(takeoff_pos(0), takeoff_pos(1)) + model_.kinematic_model_->GetMaximumDeviationFromNominal().z() - model_.kinematic_model_->GetNominalStanceInBase().front().z();
+  takeoff_pos(2) = max_z-0.05;
+  Vector3d landpos = takeoff_pos;
+  landpos(0) += jump_length_;
+  landpos(2) = terrain_->GetHeight(landpos(0), landpos(1));
 
-  double x = final_base_.lin.p().x();
-  double y = final_base_.lin.p().y();
-  double z = terrain_->GetHeight(x,y) - model_.kinematic_model_->GetNominalStanceInBase().front().z();
-  Vector3d final_pos(x, y, z);
-
-  spline_lin->SetByLinearInterpolation(initial_base_.lin.p(), final_pos, params_.GetTotalTime());
+  //std::tuple<Vector3d,double> flight_cfg = GetTakeoffVelandTime(model_.dynamic_model_->g(), takeoff_pos,landpos);
+  
+  spline_lin->SetByLinearInterpolation(initial_base_.lin.p(), takeoff_pos, params_.GetTotalTime());
   spline_lin->AddStartBound(kPos, {X,Y,Z}, initial_base_.lin.p());
   spline_lin->AddStartBound(kVel, {X,Y,Z}, initial_base_.lin.v());
-  spline_lin->AddFinalBound(kPos, params_.bounds_final_lin_pos_,   final_base_.lin.p());
-  spline_lin->AddFinalBound(kVel, params_.bounds_final_lin_vel_, final_base_.lin.v());
+  //spline_lin->AddFinalBound(kPos, params_.bounds_final_lin_pos_,   final_base_.lin.p());
+  //spline_lin->AddFinalBound(kVel, params_.bounds_final_lin_vel_, final_base_.lin.v());
   vars.push_back(spline_lin);
 
   auto spline_ang = std::make_shared<NodesVariablesAll>(n_nodes, k3D, id::base_ang_nodes);
-  spline_ang->SetByLinearInterpolation(initial_base_.ang.p(), final_base_.ang.p(), params_.GetTotalTime());
+  spline_ang->SetByLinearInterpolation(initial_base_.ang.p(), initial_base_.ang.p(), params_.GetTotalTime());
   spline_ang->AddStartBound(kPos, {X,Y,Z}, initial_base_.ang.p());
   spline_ang->AddStartBound(kVel, {X,Y,Z}, initial_base_.ang.v());
-  spline_ang->AddFinalBound(kPos, params_.bounds_final_ang_pos_, final_base_.ang.p());
-  spline_ang->AddFinalBound(kVel, params_.bounds_final_ang_vel_, final_base_.ang.v());
+  spline_ang->AddFinalBound(kPos, params_.bounds_final_ang_pos_, initial_base_.ang.p());
+  spline_ang->AddFinalBound(kVel, params_.bounds_final_ang_vel_, initial_base_.ang.v());
   vars.push_back(spline_ang);
 
   return vars;
@@ -139,10 +150,10 @@ NlpFormulation::MakeEndeffectorVariables () const
                                               params_.ee_polynomials_per_swing_phase_);
 
     // initialize towards final footholds
-    double yaw = final_base_.ang.p().z();
+    double yaw = initial_base_.ang.p().z();
     Eigen::Vector3d euler(0.0, 0.0, yaw);
     Eigen::Matrix3d w_R_b = EulerConverter::GetRotationMatrixBaseToWorld(euler);
-    Vector3d final_ee_pos_W = final_base_.lin.p() + w_R_b*model_.kinematic_model_->GetNominalStanceInBase().at(ee);
+    Vector3d final_ee_pos_W = initial_base_.lin.p() + w_R_b*model_.kinematic_model_->GetNominalStanceInBase().at(ee);
     double x = final_ee_pos_W.x();
     double y = final_ee_pos_W.y();
     double z = terrain_->GetHeight(x,y);
@@ -201,6 +212,9 @@ NlpFormulation::ContraintPtrVec
 NlpFormulation::GetConstraints(const SplineHolder& spline_holder) const
 {
   ContraintPtrVec constraints;
+  //add jump constraint
+  for (auto c : MakeJumpConstraint(spline_holder))
+    constraints.push_back(c);
   for (auto name : params_.constraints_)
     for (auto c : GetConstraint(name, spline_holder))
       constraints.push_back(c);
@@ -374,5 +388,32 @@ NlpFormulation::MakeEEMotionCost(double weight) const
 
   return cost;
 }
+
+NlpFormulation::ContraintPtrVec
+NlpFormulation::MakeJumpConstraint(const SplineHolder& s) const
+{
+  ContraintPtrVec constraints;
+
+  constraints.push_back(std::make_shared<JumpConstraint>(model_.dynamic_model_->g(),
+                                                         initial_base_.lin.p().x()+jump_length_,
+                                                         s,
+                                                         terrain_,
+                                                         -model_.kinematic_model_->GetNominalStanceInBase().front().z() -0.02,
+                                                         10
+                                                        ));
+  return constraints;
+}
+
+
+std::vector<JumpDuration::Ptr> 
+NlpFormulation::MakeJumpDurationVariables() const
+{
+  std::vector<JumpDuration::Ptr> vars;
+  auto var_duartion = std::make_shared<JumpDuration>(1.0);
+  vars.push_back(var_duartion);
+  return vars;
+}
+
+
 
 } /* namespace towr */

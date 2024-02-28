@@ -25,6 +25,7 @@ add_library(${PROJECT_NAME} SHARED
   src/nodes_variables_all.cc
   src/nodes_variables_phase_based.cc
   src/phase_durations.cc
+  src/jump_duration.cc
   # models
   src/robot_model.cc
   src/dynamic_model.cc
@@ -40,6 +41,7 @@ add_library(${PROJECT_NAME} SHARED
   src/range_of_motion_constraint.cc
   src/spline_acc_constraint.cc
   src/linear_constraint.cc
+  src/jump_constraint.cc
   # costs
   src/node_cost.cc
   src/soft_constraint.cc
@@ -79,7 +81,7 @@ target_include_directories(${PROJECT_NAME}
 enable_testing()
 # example problem solved with IPOPT
 add_executable(${PROJECT_NAME}-example 
-  test/hopper_example.cc
+  test/olympus_example.cc
 )
 target_link_libraries(${PROJECT_NAME}-example  
   PRIVATE

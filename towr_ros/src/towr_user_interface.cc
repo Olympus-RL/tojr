@@ -64,7 +64,7 @@ TowrUserInterface::TowrUserInterface ()
   user_command_pub_ = n.advertise<towr_ros::TowrCommand>(towr_msgs::user_command, 1);
 
   goal_geom_.lin.p_.setZero();
-  goal_geom_.lin.p_ << 2.1, 0.0, 0.0;
+  goal_geom_.lin.p_ << 2.0, 0.0, 0.0;
   goal_geom_.ang.p_ << 0.0, 0.0, 0.0; // roll, pitch, yaw angle applied Z->Y'->X''
 
   robot_      = RobotModel::Monoped;
@@ -77,6 +77,7 @@ TowrUserInterface::TowrUserInterface ()
   optimize_ = false;
   publish_optimized_trajectory_ = false;
   optimize_phase_durations_ = false;
+  jump_length_ = goal_geom_.lin.p_.x();
 
   PrintScreen();
 }
@@ -190,12 +191,15 @@ TowrUserInterface::CallbackKey (int c)
 {
   const static double d_lin = 0.1;  // [m]
   const static double d_ang = 0.25; // [rad]
+  const static double d_jump = 0.1; // [m]
 
   switch (c) {
     case KEY_RIGHT:
+      jump_length_ += d_jump;
       goal_geom_.lin.p_.x() -= d_lin;
       break;
     case KEY_LEFT:
+      jump_length_ += d_jump;
       goal_geom_.lin.p_.x() += d_lin;
       break;
     case KEY_DOWN:
@@ -236,9 +240,9 @@ TowrUserInterface::CallbackKey (int c)
       terrain_ = AdvanceCircularBuffer(terrain_, HeightMap::TERRAIN_COUNT);
       break;
 
-    case 'g':
-      gait_combo_ = AdvanceCircularBuffer(gait_combo_, GaitGenerator::COMBO_COUNT);
-      break;
+    //case 'g':
+    //  gait_combo_ = AdvanceCircularBuffer(gait_combo_, GaitGenerator::COMBO_COUNT);
+    //  break;
 
     case 'r':
       robot_ = AdvanceCircularBuffer(robot_, RobotModel::ROBOT_COUNT);
@@ -257,9 +261,9 @@ TowrUserInterface::CallbackKey (int c)
     case ';':
       replay_speed_ -= 0.1;
     break;
-    case 'y':
-      optimize_phase_durations_ = !optimize_phase_durations_;
-      break;
+    //case 'y':
+    //  optimize_phase_durations_ = !optimize_phase_durations_;
+    //  break;
 
 
     case 'o':
@@ -304,10 +308,10 @@ void TowrUserInterface::PublishCommand()
   msg.replay_speed             = replay_speed_;
   msg.optimize                 = optimize_;
   msg.terrain                  = terrain_;
-  msg.gait                     = gait_combo_;
   msg.robot                    = robot_;
   msg.optimize_phase_durations = optimize_phase_durations_;
   msg.plot_trajectory          = plot_trajectory_;
+  msg.jump_length             = jump_length_;
 
   user_command_pub_.publish(msg);
 

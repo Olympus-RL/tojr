@@ -46,15 +46,32 @@ public:
    */
   void SetTowrInitialState() override
   {
-    auto nominal_stance_B = formulation_.model_.kinematic_model_->GetNominalStanceInBase();
+  double pitch = 0.0;
+  double x_0_ground = 0.0;
+  double y_0_ground = 0.0;
+  double z_ground = formulation_.terrain_-> GetHeight(x_0_ground, y_0_ground);
+  HeightMap::Vector3d normal = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Normal, x_0_ground, y_0_ground);
+  HeightMap::Vector3d x_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent1, x_0_ground, y_0_ground);
+  HeightMap::Vector3d y_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent2, x_0_ground, y_0_ground);
 
-    double z_ground = 0.0;
-    formulation_.initial_ee_W_ =  nominal_stance_B;
-    std::for_each(formulation_.initial_ee_W_.begin(), formulation_.initial_ee_W_.end(),
-                  [&](Vector3d& p){ p.z() = z_ground; } // feet at 0 height
-    );
+  towr::DynamicModel::Matrix3d W_R_B;
+  W_R_B.col(0) = x_tangent;
+  W_R_B.col(1) = y_tangent;
+  W_R_B.col(2) = normal;
 
-    formulation_.initial_base_.lin.at(kPos).z() = - nominal_stance_B.front().z() + z_ground;
+  
+  auto nominal_stance_B = formulation_.model_.kinematic_model_->GetNominalStanceInBase();
+  double nominal_height = -nominal_stance_B.front().z();
+  
+  formulation_.initial_base_.lin.at(kPos) = Eigen::Vector3d(x_0_ground, y_0_ground, z_ground) + normal*nominal_height;
+  formulation_.initial_base_.ang.at(kPos) = Eigen::Vector3d(0.0, pitch, 0.0);
+  int n_ee = nominal_stance_B.size();
+  formulation_.initial_ee_W_.clear();
+  std::cout << "n_ee: " << n_ee << std::endl;
+  for (int ee=0; ee<n_ee; ++ee) {
+    formulation_.initial_ee_W_.push_back(formulation_.initial_base_.lin.at(kPos)+ W_R_B*nominal_stance_B.at(ee));
+  }
+
   }
 
   /**
@@ -64,24 +81,18 @@ public:
   {
     Parameters params;
 
-    // Instead of manually defining the initial durations for each foot and
-    // step, for convenience we use a GaitGenerator with some predefined gaits
-    // for a variety of robots (walk, trot, pace, ...).
-    auto gait_gen_ = GaitGenerator::MakeGaitGenerator(n_ee);
-    auto id_gait   = static_cast<GaitGenerator::Combos>(msg.gait);
-    gait_gen_->SetCombo(id_gait);
     for (int ee=0; ee<n_ee; ++ee) {
-      params.ee_phase_durations_.push_back(gait_gen_->GetPhaseDurations(msg.total_duration, ee));
-      params.ee_in_contact_at_start_.push_back(gait_gen_->IsInContactAtStart(ee));
-    }
+      params.ee_phase_durations_.push_back({msg.total_duration});
+      params.ee_in_contact_at_start_.push_back(true);
+   }
 
     // Here you can also add other constraints or change parameters
     // params.constraints_.push_back(Parameters::BaseRom);
 
     // increases optimization time, but sometimes helps find a solution for
     // more difficult terrain.
-    if (msg.optimize_phase_durations)
-      params.OptimizePhaseDurations();
+    //if (msg.optimize_phase_durations)
+    //  params.OptimizePhaseDurations();
 
     return params;
   }

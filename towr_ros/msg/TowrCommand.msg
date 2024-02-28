@@ -10,5 +10,5 @@ float64                replay_speed              # speed at which to playback th
 bool                   optimize                  # run TOWR optimization
 int32                  robot                     # Monoped, Biped, Quadruped, Anymal
 int32                  terrain                   # some information about the used terrain (e.g stairs, gap, slope)
-int32                  gait                      # Type of Motion (Walk, Trott, Bound, Pace)
 bool                   optimize_phase_durations  # If true, the gait is optimized over as well
+float64                jump_length               # the desired lenght of jump

@@ -20,6 +20,7 @@ add_library(${PROJECT_NAME} SHARED
   # sample formulation usage
   src/nlp_formulation.cc
   src/parameters.cc
+  src/optjump.cc
   # variables
   src/nodes_variables.cc
   src/nodes_variables_all.cc

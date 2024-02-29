@@ -74,7 +74,9 @@ private:
   bool publish_optimized_trajectory_;
   double total_duration_;
   bool optimize_phase_durations_;
-  double jump_length_;
+  double x0_ground_;
+  double y0_ground_;
+  double x_land;
 
   int AdvanceCircularBuffer(int& curr, int max) const;
 

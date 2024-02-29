@@ -11,4 +11,6 @@ bool                   optimize                  # run TOWR optimization
 int32                  robot                     # Monoped, Biped, Quadruped, Anymal
 int32                  terrain                   # some information about the used terrain (e.g stairs, gap, slope)
 bool                   optimize_phase_durations  # If true, the gait is optimized over as well
-float64                jump_length               # the desired lenght of jump
+float64                x_land                    # the x position of landig spot
+float64                x_0                       #   
+float64                y_0

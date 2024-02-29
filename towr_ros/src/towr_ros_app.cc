@@ -33,6 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace towr {
 
+  Eigen::Vector3d rot2euler(const towr::DynamicModel::Matrix3d& R) {
+  double roll, pitch, yaw;
+  roll = atan2(R(2,1), R(2,2));
+  pitch = atan2(-R(2,0), sqrt(R(2,1)*R(2,1) + R(2,2)*R(2,2)));
+  yaw = atan2(R(1,0), R(0,0));
+  return Eigen::Vector3d(roll, pitch, yaw);
+}
+
+
 /**
  * @brief An example application of using TOWR together with ROS.
  *
@@ -44,15 +53,12 @@ public:
   /**
    * @brief Sets the feet to nominal position on flat ground and base above.
    */
-  void SetTowrInitialState() override
+  void SetTowrInitialState(double x0_ground, double y0_ground) override
   {
-  double pitch = 0.0;
-  double x_0_ground = 0.0;
-  double y_0_ground = 0.0;
-  double z_ground = formulation_.terrain_-> GetHeight(x_0_ground, y_0_ground);
-  HeightMap::Vector3d normal = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Normal, x_0_ground, y_0_ground);
-  HeightMap::Vector3d x_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent1, x_0_ground, y_0_ground);
-  HeightMap::Vector3d y_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent2, x_0_ground, y_0_ground);
+  double z_ground = formulation_.terrain_-> GetHeight(x0_ground, y0_ground);
+  HeightMap::Vector3d normal = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Normal, x0_ground, y0_ground);
+  HeightMap::Vector3d x_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent1, x0_ground, y0_ground);
+  HeightMap::Vector3d y_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent2, x0_ground, y0_ground);
 
   towr::DynamicModel::Matrix3d W_R_B;
   W_R_B.col(0) = x_tangent;
@@ -63,13 +69,15 @@ public:
   auto nominal_stance_B = formulation_.model_.kinematic_model_->GetNominalStanceInBase();
   double nominal_height = -nominal_stance_B.front().z();
   
-  formulation_.initial_base_.lin.at(kPos) = Eigen::Vector3d(x_0_ground, y_0_ground, z_ground) + normal*nominal_height;
-  formulation_.initial_base_.ang.at(kPos) = Eigen::Vector3d(0.0, pitch, 0.0);
+  formulation_.initial_base_.lin.at(kPos) = Eigen::Vector3d(x0_ground, y0_ground, z_ground) + normal*nominal_height;
+  formulation_.initial_base_.ang.at(kPos) = rot2euler(W_R_B);
   int n_ee = nominal_stance_B.size();
   formulation_.initial_ee_W_.clear();
   std::cout << "n_ee: " << n_ee << std::endl;
   for (int ee=0; ee<n_ee; ++ee) {
-    formulation_.initial_ee_W_.push_back(formulation_.initial_base_.lin.at(kPos)+ W_R_B*nominal_stance_B.at(ee));
+    towr::State::VectorXd ee_w = formulation_.initial_base_.lin.at(kPos)+ W_R_B*nominal_stance_B.at(ee);
+    ee_w(2) = formulation_.terrain_->GetHeight(ee_w(0), ee_w(1));
+    formulation_.initial_ee_W_.push_back(ee_w);
   }
 
   }
@@ -139,3 +147,5 @@ int main(int argc, char *argv[])
 
   return 1;
 }
+
+

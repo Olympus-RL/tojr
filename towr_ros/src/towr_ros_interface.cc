@@ -88,9 +88,11 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
   int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
   formulation_.params_ = GetTowrParameters(n_ee, msg);
-  formulation_.jump_length_ = msg.jump_length;
 
-  SetTowrInitialState();
+
+  SetTowrInitialState(msg.x_0,msg.y_0);
+
+  formulation_.jump_length_ = msg.x_land - formulation_.initial_base_.lin.at(kPos).x();
 
   // solver parameters
   SetIpoptParameters(msg);

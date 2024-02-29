@@ -67,17 +67,19 @@ TowrUserInterface::TowrUserInterface ()
   goal_geom_.lin.p_ << 2.0, 0.0, 0.0;
   goal_geom_.ang.p_ << 0.0, 0.0, 0.0; // roll, pitch, yaw angle applied Z->Y'->X''
 
-  robot_      = RobotModel::Monoped;
+  robot_      = RobotModel::Olympus;
   terrain_    = HeightMap::FlatID;
   gait_combo_ = GaitGenerator::C0;
-  total_duration_ = 2.4;
+  total_duration_ = 1.0;
   visualize_trajectory_ = false;
   plot_trajectory_ = false;
   replay_speed_ = 1.0; // realtime
   optimize_ = false;
   publish_optimized_trajectory_ = false;
   optimize_phase_durations_ = false;
-  jump_length_ = goal_geom_.lin.p_.x();
+  x_land = goal_geom_.lin.p_.x();
+  x0_ground_ = 0.0;
+  y0_ground_ = 0.0;
 
   PrintScreen();
 }
@@ -127,21 +129,29 @@ TowrUserInterface::PrintScreen() const
   wmove(stdscr, REPLAY_SPEED, X_VALUE);
   printw("%.2f", replay_speed_);
 
+  //wmove(stdscr, GOAL_POS, X_KEY);
+  //printw("arrows");
+  //wmove(stdscr, GOAL_POS, X_DESCRIPTION);
+  //printw("Goal x-y");
+  //wmove(stdscr, GOAL_POS, X_VALUE);
+  //PrintVector2D(goal_geom_.lin.p_.topRows(2));
+  //printw(" [m]");
+
   wmove(stdscr, GOAL_POS, X_KEY);
   printw("arrows");
   wmove(stdscr, GOAL_POS, X_DESCRIPTION);
-  printw("Goal x-y");
+  printw("X landing position");
   wmove(stdscr, GOAL_POS, X_VALUE);
-  PrintVector2D(goal_geom_.lin.p_.topRows(2));
-  printw(" [m]");
+  printw("%.2f [m]", x_land);
+
 
   wmove(stdscr, GOAL_ORI, X_KEY);
   printw("keypad");
   wmove(stdscr, GOAL_ORI, X_DESCRIPTION);
-  printw("Goal r-p-y");
+  printw("Start X-Y position");
   wmove(stdscr, GOAL_ORI, X_VALUE);
-  PrintVector(goal_geom_.ang.p_);
-  printw(" [rad]");
+  printw("%.2f", x0_ground_);
+  printw(" %.2f [m]", y0_ground_);
 
   wmove(stdscr, ROBOT, X_KEY);
   printw("r");
@@ -150,19 +160,19 @@ TowrUserInterface::PrintScreen() const
   wmove(stdscr, ROBOT, X_VALUE);
   printw("%s\n", robot_names.at(static_cast<RobotModel::Robot>(robot_)).c_str());
 
-  wmove(stdscr, GAIT, X_KEY);
-  printw("g");
-  wmove(stdscr, GAIT, X_DESCRIPTION);
-  printw("Gait");
-  wmove(stdscr, GAIT, X_VALUE);
-  printw("%s", std::to_string(gait_combo_).c_str());
+  //wmove(stdscr, GAIT, X_KEY);
+  //printw("g");
+  //wmove(stdscr, GAIT, X_DESCRIPTION);
+  //printw("Gait");
+  //wmove(stdscr, GAIT, X_VALUE);
+  //printw("%s", std::to_string(gait_combo_).c_str());
 
-  wmove(stdscr, OPTIMIZE_GAIT, X_KEY);
-  printw("y");
-  wmove(stdscr, OPTIMIZE_GAIT, X_DESCRIPTION);
-  printw("Optimize gait");
-  wmove(stdscr, OPTIMIZE_GAIT, X_VALUE);
-  optimize_phase_durations_? printw("On\n") : printw("off\n");
+  //wmove(stdscr, OPTIMIZE_GAIT, X_KEY);
+  //printw("y");
+  //wmove(stdscr, OPTIMIZE_GAIT, X_DESCRIPTION);
+  //printw("Optimize gait");
+  //wmove(stdscr, OPTIMIZE_GAIT, X_VALUE);
+  //optimize_phase_durations_? printw("On\n") : printw("off\n");
 
   wmove(stdscr, TERRAIN, X_KEY);
   printw("t");
@@ -195,11 +205,11 @@ TowrUserInterface::CallbackKey (int c)
 
   switch (c) {
     case KEY_RIGHT:
-      jump_length_ += d_jump;
+      x_land-= d_jump;
       goal_geom_.lin.p_.x() -= d_lin;
       break;
     case KEY_LEFT:
-      jump_length_ += d_jump;
+      x_land += d_jump;
       goal_geom_.lin.p_.x() += d_lin;
       break;
     case KEY_DOWN:
@@ -215,34 +225,26 @@ TowrUserInterface::CallbackKey (int c)
       goal_geom_.lin.p_.z() -= 0.5*d_lin;
       break;
 
-    // desired goal orientations
+    // x 0 ground
     case '4':
-      goal_geom_.ang.p_.x() -= d_ang; // roll-
+      x0_ground_ -= d_lin; // x0-
       break;
     case '6':
-      goal_geom_.ang.p_.x() += d_ang; // roll+
+      x0_ground_ += d_lin; // x0+
       break;
     case '8':
-      goal_geom_.ang.p_.y() += d_ang; // pitch+
+      y0_ground_ += d_ang; // y0+
       break;
     case '2':
-      goal_geom_.ang.p_.y() -= d_ang; // pitch-
+      y0_ground_ -= d_ang; // y0-
       break;
-    case '1':
-      goal_geom_.ang.p_.z() += d_ang; // yaw+
-      break;
-    case '9':
-      goal_geom_.ang.p_.z() -= d_ang; // yaw-
-      break;
-
+   
     // terrains
     case 't':
       terrain_ = AdvanceCircularBuffer(terrain_, HeightMap::TERRAIN_COUNT);
       break;
 
-    //case 'g':
-    //  gait_combo_ = AdvanceCircularBuffer(gait_combo_, GaitGenerator::COMBO_COUNT);
-    //  break;
+  
 
     case 'r':
       robot_ = AdvanceCircularBuffer(robot_, RobotModel::ROBOT_COUNT);
@@ -261,10 +263,7 @@ TowrUserInterface::CallbackKey (int c)
     case ';':
       replay_speed_ -= 0.1;
     break;
-    //case 'y':
-    //  optimize_phase_durations_ = !optimize_phase_durations_;
-    //  break;
-
+ 
 
     case 'o':
       optimize_ = true;
@@ -311,7 +310,9 @@ void TowrUserInterface::PublishCommand()
   msg.robot                    = robot_;
   msg.optimize_phase_durations = optimize_phase_durations_;
   msg.plot_trajectory          = plot_trajectory_;
-  msg.jump_length             = jump_length_;
+  msg.x_0                     = x0_ground_;
+  msg.y_0                     = y0_ground_;
+  msg.x_land                   = x_land;
 
   user_command_pub_.publish(msg);
 

@@ -35,24 +35,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr_ros/TowrCommand.h>
 #include <towr_ros/topic_names.h>
 #include <towr/terrain/height_map.h>
+#include <towr/terrain/terrain_data.h>
+#include <towr/terrain/examples/height_map_examples.h>
+#include <towr_ros/terrain_parser.h>
+
 
 
 namespace towr {
 
 static ros::Publisher rviz_pub;
+std::shared_ptr<TerrainFromData> terrain_ =  MakeTerrainFromData();
+
 
 void UserCommandCallback(const towr_ros::TowrCommand& msg_in)
 {
   // get which terrain
-  auto terrain_id = static_cast<HeightMap::TerrainID>(msg_in.terrain);
-  auto terrain_ = HeightMap::MakeTerrain(terrain_id);
+  //auto terrain_id = static_cast<HeightMap::TerrainID>(msg_in.terrain);
+  //auto terrain_ = HeightMap::MakeTerrain(terrain_id);
 
   // x-y area patch that should be drawn in rviz
   double dxy   =  0.06;
-  double x_min = -1.0;
-  double x_max =  4.0;
-  double y_min = -1.0;
-  double y_max =  1.0;
+  double x_min = -5.0;
+  double x_max =  5.0;
+  double y_min = -3.0;
+  double y_max =  3.0;
 
   visualization_msgs::Marker m;
   int id = 0;

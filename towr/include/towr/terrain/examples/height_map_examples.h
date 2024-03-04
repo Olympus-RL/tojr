@@ -30,7 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TOWR_TOWR_ROS_INCLUDE_TOWR_ROS_HEIGHT_MAP_EXAMPLES_H_
 #define TOWR_TOWR_ROS_INCLUDE_TOWR_ROS_HEIGHT_MAP_EXAMPLES_H_
 
+#include <libInterpolate/Interpolate.hpp>
 #include <towr/terrain/height_map.h>
+#include <towr/terrain/terrain_data.h>
 
 namespace towr {
 
@@ -39,6 +41,22 @@ namespace towr {
  * @{
  */
 
+
+/**
+ * @brief Terrain from terrain data.
+ */
+
+class TerrainFromData : public HeightMap {
+  public:
+    using Interpolator = _2D::BicubicInterpolator<double>;
+    TerrainFromData(const TerrainData& terrain_data);
+    double GetHeight(double x, double y) const override;
+    double GetHeightDerivWrtX(double x, double y) const override;
+    double GetHeightDerivWrtY(double x, double y) const override;
+  private:
+    TerrainData terrain_data_;
+    Interpolator interpolator_;
+};
 /**
  * @brief Sample terrain of even height.
  */

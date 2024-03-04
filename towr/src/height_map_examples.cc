@@ -31,6 +31,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace towr {
 
+TerrainFromData::TerrainFromData(const TerrainData& terrain_data)
+{
+  interpolator_.setData(terrain_data.x,terrain_data.y,terrain_data.z);
+}
+
+double
+TerrainFromData::GetHeight(double x, double y) const
+{
+  return interpolator_(x, y);
+}
+double
+TerrainFromData::GetHeightDerivWrtX(double x, double y) const
+{
+  return interpolator_.dx(x, y);
+}
+double 
+TerrainFromData::GetHeightDerivWrtY(double x, double y) const
+{
+  return interpolator_.dy(x, y);
+}
+
 
 FlatGround::FlatGround(double height)
 {
@@ -43,11 +64,13 @@ Block::GetHeight (double x, double y) const
   double h = 0.0;
 
   // very steep ramp leading up to block
-  if (block_start <= x && x <=block_start+eps_)
+  if (block_start <= x && x <=block_start+eps_) {
     h = slope_*(x-block_start);
+  }
 
-  if (block_start+eps_ <= x && x <= block_start+length_)
+  if (block_start+eps_ <= x && x <= block_start+length_) {
     h = height_;
+  }
 
   return h;
 }

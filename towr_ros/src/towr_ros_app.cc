@@ -55,32 +55,39 @@ public:
    */
   void SetTowrInitialState(double x0_ground, double y0_ground) override
   {
-  double z_ground = formulation_.terrain_-> GetHeight(x0_ground, y0_ground);
-  HeightMap::Vector3d normal = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Normal, x0_ground, y0_ground);
-  HeightMap::Vector3d x_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent1, x0_ground, y0_ground);
-  HeightMap::Vector3d y_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent2, x0_ground, y0_ground);
-
-  towr::DynamicModel::Matrix3d W_R_B;
-  W_R_B.col(0) = x_tangent;
-  W_R_B.col(1) = y_tangent;
-  W_R_B.col(2) = normal;
+  //double z_ground = formulation_.terrain_-> GetHeight(x0_ground, y0_ground);
+  //HeightMap::Vector3d normal = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Normal, x0_ground, y0_ground);
+  //HeightMap::Vector3d x_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent1, x0_ground, y0_ground);
+  //HeightMap::Vector3d y_tangent = formulation_.terrain_ -> GetNormalizedBasis(HeightMap::Direction::Tangent2, x0_ground, y0_ground);
+//
+  //towr::DynamicModel::Matrix3d W_R_B;
+  //W_R_B.col(0) = x_tangent;
+  //W_R_B.col(1) = y_tangent;
+  //W_R_B.col(2) = normal;
 
   
-  auto nominal_stance_B = formulation_.model_.kinematic_model_->GetNominalStanceInBase();
+  auto nominal_stance_B = model_.kinematic_model_->GetNominalStanceInBase();
   double nominal_height = -nominal_stance_B.front().z();
   
-  formulation_.initial_base_.lin.at(kPos) = Eigen::Vector3d(x0_ground, y0_ground, z_ground) + normal*nominal_height;
-  formulation_.initial_base_.ang.at(kPos) = rot2euler(W_R_B);
-  int n_ee = nominal_stance_B.size();
-  formulation_.initial_ee_W_.clear();
-  std::cout << "n_ee: " << n_ee << std::endl;
+  double h = terrain_->GetHeight(x0_ground, y0_ground);
+  Eigen::Vector3d x0_W(x0_ground, y0_ground,h+ nominal_height);
+  Eigen::Vector3d rpy(0,0,0);
+  optjump_ -> SetInitialBaseState(x0_W, rpy);
+
+  int n_ee = 4;
+  OptJump::EEpos initial_ee_W;
   for (int ee=0; ee<n_ee; ++ee) {
-    towr::State::VectorXd ee_w = formulation_.initial_base_.lin.at(kPos)+ W_R_B*nominal_stance_B.at(ee);
-    ee_w(2) = formulation_.terrain_->GetHeight(ee_w(0), ee_w(1));
-    formulation_.initial_ee_W_.push_back(ee_w);
+    towr::State::VectorXd ee_w = x0_W + nominal_stance_B.at(ee);
+    ee_w(2) = terrain_->GetHeight(ee_w(0), ee_w(1));
+    initial_ee_W.push_back(ee_w);
   }
 
-  }
+  optjump_ -> SetInitialEEState(initial_ee_W);
+  
+  initial_base_pos_ = x0_W;
+  initial_base_ang_ = rpy;
+  initial_ee_pos_ = initial_ee_W;
+ }
 
   /**
    * @brief Sets the parameters required to formulate the TOWR problem.
@@ -111,7 +118,7 @@ public:
   void SetIpoptParameters(const TowrCommandMsg& msg) override
   {
     // the HA-L solvers are alot faster, so consider installing and using
-    solver_->SetOption("linear_solver", "mumps"); // ma27, ma57
+    //solver_->SetOption("linear_solver", "mumps"); // ma27, ma57
 
     // Analytically defining the derivatives in IFOPT as we do it, makes the
     // problem a lot faster. However, if this becomes too difficult, we can also
@@ -119,20 +126,20 @@ public:
     // this uses numerical derivatives for ALL constraints, there doesn't yet
     // exist an option to turn on numerical derivatives for only some constraint
     // sets.
-    solver_->SetOption("jacobian_approximation", "exact"); // finite difference-values
+    //solver_->SetOption("jacobian_approximation", "exact"); // finite difference-values
 
     // This is a great to test if the analytical derivatives implemented in are
     // correct. Some derivatives that are correct are still flagged, showing a
     // deviation of 10e-4, which is fine. What to watch out for is deviations > 10e-2.
     // solver_->SetOption("derivative_test", "first-order");
 
-    solver_->SetOption("max_cpu_time", 40.0);
-    solver_->SetOption("print_level", 5);
+    //solver_->SetOption("max_cpu_time", 40.0);
+    //solver_->SetOption("print_level", 5);
 
-    if (msg.play_initialization)
-      solver_->SetOption("max_iter", 0);
-    else
-      solver_->SetOption("max_iter", 3000);
+    //if (msg.play_initialization)
+    //  solver_->SetOption("max_iter", 0);
+    //else
+    //  solver_->SetOption("max_iter", 3000);
   }
 };
 

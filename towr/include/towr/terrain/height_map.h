@@ -68,6 +68,9 @@ namespace towr {
  *
  * @ingroup Terrains
  */
+
+
+
 class HeightMap {
 public:
   using Ptr      = std::shared_ptr<HeightMap>;

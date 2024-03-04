@@ -1,16 +1,18 @@
 #include <towr/optjump.h>
-
+#include <towr/terrain/terrain_data.h>
+#include <towr/terrain/examples/height_map_examples.h>
+#include <towr/variables/jump_duration.h>
 
 namespace towr {
-OptJump::OptJump() {
+
+OptJump::OptJump(const RobotModel& model, const TerrainData& terrain_data){
+    formulation_.model_ = model;
+    terrain_ = std::make_shared<TerrainFromData>(terrain_data);
+    formulation_.terrain_ = terrain_;
     solver_ = std::make_shared<ifopt::IpoptSolver>();
+    
 }
-void OptJump::SetTerrain(const HeightMap::Ptr terrain) {
-    terrain_ = terrain;
-}
-void OptJump::SetModel(const RobotModel& model) {
-    model_ = model;
-}
+
 void OptJump::SetInitialBaseState(const Vector3d pos, const Vector3d ang) {
     initial_base_.lin.at(kPos) = pos;
     initial_base_.ang.at(kPos) = ang;
@@ -18,12 +20,10 @@ void OptJump::SetInitialBaseState(const Vector3d pos, const Vector3d ang) {
 void OptJump::SetInitialEEState(const EEpos initial_ee_pos) {
     initial_ee_pos_ = initial_ee_pos;
 }
-void OptJump::SetJumpLenght(const double lenght) {
-    jump_length_ = lenght;
+void OptJump::SetJumpLength(const double length) {
+    jump_length_ = length;
 }
 void OptJump::Solve() {
-    formulation_.model_ = model_;
-    formulation_.terrain_ = terrain_;
     formulation_.jump_length_ = jump_length_;
     formulation_.initial_base_ = initial_base_;
     formulation_.initial_ee_W_ = initial_ee_pos_;
@@ -69,5 +69,13 @@ OptJump::EETrajectory OptJump::GetEETrajectory(double dt) const {
     traj.push_back(traj_t);
   }
   return traj;
+}
+
+double OptJump::GetTakeoffTime() const {
+  return solution_.base_linear_->GetTotalTime();
+}
+
+double OptJump::GetJumpDuration() const {
+  return nlp_.GetOptVariables() -> GetComponent<towr::JumpDuration>("jump_duration") -> GetValues()(0);
 }
 } /* namespace towr */

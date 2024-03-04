@@ -3,6 +3,7 @@ project(towr VERSION 1.3.2)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(ifopt 2.0.1 REQUIRED)
+find_package(libInterpolate REQUIRED)
 
 
 ###########
@@ -82,7 +83,7 @@ target_include_directories(${PROJECT_NAME}
 enable_testing()
 # example problem solved with IPOPT
 add_executable(${PROJECT_NAME}-example 
-  test/olympus_example.cc
+  test/terrain_pars.cc
 )
 target_link_libraries(${PROJECT_NAME}-example  
   PRIVATE

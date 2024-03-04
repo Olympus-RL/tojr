@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr_ros/towr_ros_interface.h>
+#include <towr_ros/terrain_parser.h>
 
 #include <std_msgs/Int32.h>
 
@@ -36,9 +37,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <xpp_msgs/TerrainInfo.h>
 
 #include <towr/terrain/height_map.h>
+#include <towr/terrain/terrain_data.h>
 #include <towr/variables/euler_converter.h>
 #include <towr_ros/topic_names.h>
 #include <towr_ros/towr_xpp_ee_map.h>
+
+#include <towr/variables/spline_holder.h>
+
+
+
 
 
 namespace towr {
@@ -46,6 +53,8 @@ namespace towr {
 
 TowrRosInterface::TowrRosInterface ()
 {
+
+  std::cout << "TowrRosInterface_start" << std::endl;
   ::ros::NodeHandle n;
 
   user_command_sub_ = n.subscribe(towr_msgs::user_command, 1,
@@ -56,10 +65,22 @@ TowrRosInterface::TowrRosInterface ()
 
   robot_parameters_pub_  = n.advertise<xpp_msgs::RobotParameters>
                                     (xpp_msgs::robot_parameters, 1);
+  
+  TerrainData terrain_data;
+  std::cout << "TowrRosInterface_pre_terrain" << std::endl;
+  ParseTerrainData(terrain_data);
+  std::cout << "TowrRosInterface_terrain" << std::endl;
 
-  solver_ = std::make_shared<ifopt::IpoptSolver>();
+  towr::RobotModel model = towr::RobotModel(towr::RobotModel::Olympus);
+  std::cout << "TowrRosInterface_model" << std::endl;
+  optjump_ = std::make_shared<OptJump>(model, terrain_data);
+  std::cout << "TowrRosInterface_optjump" << std::endl;
+  terrain_ = optjump_->GetTerrain();
 
+
+  model_ = model;
   visualization_dt_ = 0.01;
+  std::cout << "TowrRosInterface_end" << std::endl;
 }
 
 BaseState
@@ -78,25 +99,16 @@ void
 TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 {
   // robot model
-  formulation_.model_ = RobotModel(static_cast<RobotModel::Robot>(msg.robot));
-  auto robot_params_msg = BuildRobotParametersMsg(formulation_.model_);
+  auto robot_params_msg = BuildRobotParametersMsg(model_);
   robot_parameters_pub_.publish(robot_params_msg);
 
-  // terrain
-  auto terrain_id = static_cast<HeightMap::TerrainID>(msg.terrain);
-  formulation_.terrain_ = HeightMap::MakeTerrain(terrain_id);
-
-  int n_ee = formulation_.model_.kinematic_model_->GetNumberOfEndeffectors();
-  formulation_.params_ = GetTowrParameters(n_ee, msg);
-
+  int n_ee = model_.kinematic_model_->GetNumberOfEndeffectors();
 
   SetTowrInitialState(msg.x_0,msg.y_0);
-
-  formulation_.jump_length_ = msg.x_land - formulation_.initial_base_.lin.at(kPos).x();
+  optjump_ -> SetJumpLength(msg.x_land - msg.x_0);
 
   // solver parameters
   SetIpoptParameters(msg);
-
   // visualization
   PublishInitialState();
 
@@ -106,16 +118,8 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   #include <ifopt/problem.h> // Include the header file for the ifopt::Problem class
 
   if (msg.optimize || msg.play_initialization) {
-    nlp_ = ifopt::Problem();
-    for (auto c : formulation_.GetVariableSets(solution)) {
-      nlp_.AddVariableSet(c);
-    }
-    for (auto c : formulation_.GetConstraints(solution))
-      nlp_.AddConstraintSet(c);
-    for (auto c : formulation_.GetCosts())
-      nlp_.AddCostSet(c);
-
-    solver_->Solve(nlp_);
+    std::cout << "Optimizing trajectory..." << std::endl;
+    optjump_ -> Solve();
     SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
   }
 
@@ -139,15 +143,15 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 void
 TowrRosInterface::PublishInitialState()
 {
-  int n_ee = formulation_.initial_ee_W_.size();
+  int n_ee = 4;
   xpp::RobotStateCartesian xpp(n_ee);
-  xpp.base_.lin.p_ = formulation_.initial_base_.lin.p();
-  xpp.base_.ang.q  = EulerConverter::GetQuaternionBaseToWorld(formulation_.initial_base_.ang.p());
+  xpp.base_.lin.p_ = initial_base_pos_;
+  xpp.base_.ang.q  = EulerConverter::GetQuaternionBaseToWorld(initial_base_ang_);
 
   for (int ee_towr=0; ee_towr<n_ee; ++ee_towr) {
     int ee_xpp = ToXppEndeffector(n_ee, ee_towr).first;
     xpp.ee_contact_.at(ee_xpp)   = true;
-    xpp.ee_motion_.at(ee_xpp).p_ = formulation_.initial_ee_W_.at(ee_towr);
+    xpp.ee_motion_.at(ee_xpp).p_ = initial_ee_pos_.at(ee_towr);
     xpp.ee_forces_.at(ee_xpp).setZero(); // zero for visualization
   }
 
@@ -158,6 +162,7 @@ std::vector<TowrRosInterface::XppVec>
 TowrRosInterface::GetIntermediateSolutions ()
 {
   std::vector<XppVec> trajectories;
+  ifopt::Problem nlp_ = optjump_ -> GetNlp();
 
   for (int iter=0; iter<nlp_.GetIterationCount(); ++iter) {
     nlp_.SetOptVariables(iter);
@@ -171,9 +176,10 @@ TowrRosInterface::XppVec
 TowrRosInterface::GetTrajectory () const
 {
   XppVec trajectory;
+  SplineHolder solution = optjump_ -> GetSolution();
   double t = 0.0;
   double T = solution.base_linear_->GetTotalTime();
-  double T_jump = nlp_.GetOptVariables() -> GetComponent<towr::JumpDuration>("jump_duration") -> GetValues()(0);
+  double T_jump = optjump_ -> GetJumpDuration();
   EulerConverter base_angular(solution.base_angular_);
   int n_ee = solution.ee_motion_.size();
   while (t<=T+1e-5) {
@@ -209,7 +215,7 @@ TowrRosInterface::GetTrajectory () const
 
 
   t = 0;
-  double g = formulation_.model_.dynamic_model_->g();
+  double g = model_.dynamic_model_->g();
   while (t<=T_jump+1e-5) {
     xpp::RobotStateCartesian state = takeoff_state;
 
@@ -311,9 +317,9 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
 
     xpp_msgs::TerrainInfo terrain_msg;
     for (auto ee : state.ee_motion_.ToImpl()) {
-      Vector3d n = formulation_.terrain_->GetNormalizedBasis(HeightMap::Normal, ee.p_.x(), ee.p_.y());
+      Vector3d n = terrain_->GetNormalizedBasis(HeightMap::Normal, ee.p_.x(), ee.p_.y());
       terrain_msg.surface_normals.push_back(xpp::Convert::ToRos<geometry_msgs::Vector3>(n));
-      terrain_msg.friction_coeff = formulation_.terrain_->GetFrictionCoeff();
+      terrain_msg.friction_coeff = terrain_->GetFrictionCoeff();
     }
 
     bag.write(xpp_msgs::terrain_info, timestamp, terrain_msg);

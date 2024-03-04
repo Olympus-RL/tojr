@@ -40,8 +40,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <xpp_msgs/RobotParameters.h>
 #include <towr_ros/TowrCommand.h>
 
-#include <towr/nlp_formulation.h>
-//#include <towr/variables/jump_duration.h>
+#include <towr/optjump.h>
+#include <towr/models/robot_model.h>
 #include <ifopt/ipopt_solver.h>
 
 
@@ -85,19 +85,19 @@ protected:
    */
   virtual void SetIpoptParameters(const TowrCommandMsg& msg) = 0;
 
-  NlpFormulation formulation_;         ///< the default formulation, can be adapted
-  ifopt::IpoptSolver::Ptr solver_; ///< NLP solver, could also use SNOPT.
-
+  OptJump::Ptr optjump_;         ///< the TO fro jumping
+  HeightMap::Ptr terrain_;      ///< the terrain to be used.
+  Eigen::Vector3d initial_base_pos_; ///< initial base linear position
+  Eigen::Vector3d initial_base_ang_; ///< initial base angular position
+  KinematicModel::EEPos initial_ee_pos_; ///< initial end-effector position
+  RobotModel model_;        ///< the robot model to be used.
 private:
-  SplineHolder solution; ///< the solution splines linked to the opt-variables.
-  ifopt::Problem nlp_;   ///< the actual nonlinear program to be solved.
   double visualization_dt_; ///< duration between two rviz visualization states.
-  JumpDuration::Ptr jump_duration_;    ///< duration of the jump phase.
-
+  JumpDuration::Ptr jump_duration_; ///< duration of the jump phase.
+  
   ::ros::Subscriber user_command_sub_;
   ::ros::Publisher initial_state_pub_;
   ::ros::Publisher robot_parameters_pub_;
-
   void UserCommandCallback(const TowrCommandMsg& msg);
   XppVec GetTrajectory() const;
   virtual BaseState GetGoalState(const TowrCommandMsg& msg) const;

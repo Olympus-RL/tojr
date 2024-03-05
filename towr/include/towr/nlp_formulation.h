@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <towr/terrain/height_map.h>
 #include <towr/parameters.h>
 #include <towr/variables/jump_duration.h>
+#include <towr/initialization/takeoff_generation.h>
 
 
 
@@ -109,7 +110,7 @@ public:
 
 private:
   // variables
-  std::vector<NodesVariables::Ptr> MakeBaseVariables() const;
+  std::vector<NodesVariables::Ptr> MakeBaseVariables(JumpDuration::Ptr jump_duration) const;
   std::vector<NodesVariablesPhaseBased::Ptr> MakeEndeffectorVariables() const;
   std::vector<NodesVariablesPhaseBased::Ptr> MakeForceVariables() const;
   std::vector<PhaseDurations::Ptr> MakeContactScheduleVariables() const;

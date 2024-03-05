@@ -56,7 +56,7 @@ NodesVariablesAll::GetNodeValuesInfo (int idx) const
   nvi.id_    = std::floor(idx/n_opt_values_per_node_);
 
   vec_nvi.push_back(nvi);
-
+   
   return vec_nvi;
 }
 

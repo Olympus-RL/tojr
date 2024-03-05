@@ -8,11 +8,20 @@ namespace towr {
 OptJump::OptJump(const RobotModel& model, const TerrainData& terrain_data){
     formulation_.model_ = model;
     terrain_ = std::make_shared<TerrainFromData>(terrain_data);
+    //terrain_ = HeightMap::MakeTerrain(HeightMap::FlatID);
     formulation_.terrain_ = terrain_;
     solver_ = std::make_shared<ifopt::IpoptSolver>();
     
 }
-
+void OptJump::SetSolverOption(const std::string& name, const std::string& value) {
+    solver_->SetOption(name, value);
+}
+void OptJump::SetSolverOption(const std::string& name, int value) {
+    solver_->SetOption(name, value);
+}
+void OptJump::SetSolverOption(const std::string& name, double value) {
+    solver_->SetOption(name, value);
+}
 void OptJump::SetInitialBaseState(const Vector3d pos, const Vector3d ang) {
     initial_base_.lin.at(kPos) = pos;
     initial_base_.ang.at(kPos) = ang;
@@ -24,25 +33,36 @@ void OptJump::SetJumpLength(const double length) {
     jump_length_ = length;
 }
 void OptJump::Solve() {
+    std::cout << "Solving jump" << std::endl;
     formulation_.jump_length_ = jump_length_;
     formulation_.initial_base_ = initial_base_;
     formulation_.initial_ee_W_ = initial_ee_pos_;
 	int num_ee = initial_ee_pos_.size();
+  formulation_.params_.ee_phase_durations_.clear();
+  formulation_.params_.ee_in_contact_at_start_.clear();
     for (int ee=0; ee<num_ee; ++ee) {
       formulation_.params_.ee_phase_durations_.push_back({1.0}); // this should be able to modify
       formulation_.params_.ee_in_contact_at_start_.push_back(true);
     }
- 
+  std::cout << "Adding variables, constraints and costs" << std::endl;  
+  nlp_ = ifopt::Problem();
   for (auto c : formulation_.GetVariableSets(solution_))
     nlp_.AddVariableSet(c);
   for (auto c : formulation_.GetConstraints(solution_))
     nlp_.AddConstraintSet(c);
   for (auto c : formulation_.GetCosts())
     nlp_.AddCostSet(c);
-
+  std::cout << "kuk69" << std::endl;
   solver_->SetOption("jacobian_approximation", "exact"); // "finite difference-values"
+  std::cout << "kuk70" << std::endl;
+
   solver_->SetOption("max_cpu_time", 20.0);
+  std::cout << "kuk71" << std::endl;
+
+  //solver_->SetOption("max_iter", 0);
+
   solver_->Solve(nlp_);
+  std::cout << "kuk72" << std::endl;
 }
 
 OptJump::BaseTrajectory OptJump::GetBaseTrajectory(double dt) const {

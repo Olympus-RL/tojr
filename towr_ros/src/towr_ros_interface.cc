@@ -114,22 +114,22 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 
   // Defaults to /home/user/.ros/
   std::string bag_file = "towr_trajectory.bag";
-  #include <towr/variables/jump_duration.h> // Include the header file for the JumpDuration class
-  #include <ifopt/problem.h> // Include the header file for the ifopt::Problem class
-
   if (msg.optimize || msg.play_initialization) {
     std::cout << "Optimizing trajectory..." << std::endl;
     optjump_ -> Solve();
+    std::cout << "Optimization finished." << std::endl;
     SaveOptimizationAsRosbag(bag_file, robot_params_msg, msg, false);
   }
 
   // playback using terminal commands
   if (msg.replay_trajectory || msg.play_initialization || msg.optimize) {
+    std::cout << "Replaying trajectory..." << std::endl;
     int success = system(("rosbag play --topics "
         + xpp_msgs::robot_state_desired + " "
         + xpp_msgs::terrain_info
         + " -r " + std::to_string(msg.replay_speed)
         + " --quiet " + bag_file).c_str());
+    std::cout << "Replay finished." << std::endl;
   }
 
   if (msg.plot_trajectory) {
@@ -143,6 +143,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
 void
 TowrRosInterface::PublishInitialState()
 {
+  std::cout << "Publish initial state" << std::endl;
   int n_ee = 4;
   xpp::RobotStateCartesian xpp(n_ee);
   xpp.base_.lin.p_ = initial_base_pos_;
@@ -175,6 +176,7 @@ TowrRosInterface::GetIntermediateSolutions ()
 TowrRosInterface::XppVec
 TowrRosInterface::GetTrajectory () const
 {
+  std::cout << "GetTrajectory" << std::endl;
   XppVec trajectory;
   SplineHolder solution = optjump_ -> GetSolution();
   double t = 0.0;
@@ -252,6 +254,7 @@ TowrRosInterface::GetTrajectory () const
 xpp_msgs::RobotParameters
 TowrRosInterface::BuildRobotParametersMsg(const RobotModel& model) const
 {
+  std::cout << "BuildRobotParametersMsg" << std::endl;
   xpp_msgs::RobotParameters params_msg;
   auto max_dev_xyz = model.kinematic_model_->GetMaximumDeviationFromNominal();
   params_msg.ee_max_dev = xpp::Convert::ToRos<geometry_msgs::Vector3>(max_dev_xyz);
@@ -275,6 +278,7 @@ TowrRosInterface::SaveOptimizationAsRosbag (const std::string& bag_name,
                                    const TowrCommandMsg user_command_msg,
                                    bool include_iterations)
 {
+  std::cout << "SaveOptimizationAsRosbag" << std::endl;
   rosbag::Bag bag;
   bag.open(bag_name, rosbag::bagmode::Write);
   ::ros::Time t0(1e-6); // t=0.0 throws ROS exception
@@ -308,6 +312,7 @@ TowrRosInterface::SaveTrajectoryInRosbag (rosbag::Bag& bag,
                                  const XppVec& traj,
                                  const std::string& topic) const
 {
+  std::cout << "SaveTrajectoryInRosbag" << std::endl;
   for (const auto state : traj) {
     auto timestamp = ::ros::Time(state.t_global_ + 1e-6); // t=0.0 throws ROS exception
 

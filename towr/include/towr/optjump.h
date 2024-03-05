@@ -44,6 +44,10 @@ class OptJump {
     const SplineHolder& GetSolution() const{return solution_;};
     HeightMap::Ptr GetTerrain() const{return terrain_;};
     ifopt::Problem& GetNlp() {return nlp_;};
+
+    void SetSolverOption(const std::string& name, const std::string& value);
+    void SetSolverOption(const std::string& name, int value);
+    void SetSolverOption(const std::string& name, double value);
    
   private:
     NlpFormulation formulation_;

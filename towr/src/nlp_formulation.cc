@@ -70,7 +70,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   VariablePtrVec vars;
   auto jump_duration = MakeJumpDurationVariables();
   vars.insert(vars.end(), jump_duration.begin(), jump_duration.end());
-  auto base_motion = MakeBaseVariables();
+  auto base_motion = MakeBaseVariables(jump_duration.at(0)); // Fix: change jump_duration(0) to jump_duration->at(0)
   vars.insert(vars.end(), base_motion.begin(), base_motion.end());
 
   auto ee_motion = MakeEndeffectorVariables();
@@ -80,11 +80,14 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   vars.insert(vars.end(), ee_force.begin(), ee_force.end());
 
   auto contact_schedule = MakeContactScheduleVariables();
+
   // can also just be fixed timings that aren't optimized over, but still added
   // to spline_holder.
   if (params_.IsOptimizeTimings()) {
     vars.insert(vars.end(), contact_schedule.begin(), contact_schedule.end());
   }
+
+
 
   // stores these readily constructed spline
   spline_holder = SplineHolder(base_motion.at(0), // linear
@@ -98,7 +101,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
 }
 
 std::vector<NodesVariables::Ptr>
-NlpFormulation::MakeBaseVariables () const
+NlpFormulation::MakeBaseVariables (JumpDuration::Ptr jump_duration) const
 {
   std::vector<NodesVariables::Ptr> vars;
 
@@ -109,40 +112,48 @@ NlpFormulation::MakeBaseVariables () const
   Vector3d takeoff_pos;
   takeoff_pos(0) = initial_base_.lin.p().x();
   takeoff_pos(1) = initial_base_.lin.p().y();
+
   double max_z = terrain_->GetHeight(takeoff_pos(0), takeoff_pos(1)) + model_.kinematic_model_->GetMaximumDeviationFromNominal().z() - model_.kinematic_model_->GetNominalStanceInBase().front().z();
-  takeoff_pos(2) = max_z-0.05;
+  double takeoff_height = max_z-0.05;
   Vector3d landpos = takeoff_pos;
   landpos(0) += jump_length_;
-  landpos(2) = terrain_->GetHeight(landpos(0), landpos(1));
+  double land_heigth = terrain_->GetHeight(landpos(0), landpos(1));
 
-  //std::tuple<Vector3d,double> flight_cfg = GetTakeoffVelandTime(model_.dynamic_model_->g(), takeoff_pos,landpos);
-  
-  spline_lin->SetByLinearInterpolation(initial_base_.lin.p(), takeoff_pos, params_.GetTotalTime());
+
   spline_lin->AddStartBound(kPos, {X,Y,Z}, initial_base_.lin.p());
   spline_lin->AddStartBound(kVel, {X,Y,Z}, initial_base_.lin.v());
   //spline_lin->AddFinalBound(kPos, params_.bounds_final_lin_pos_,   final_base_.lin.p());
   //spline_lin->AddFinalBound(kVel, params_.bounds_final_lin_vel_, final_base_.lin.v());
-  vars.push_back(spline_lin);
+  
 
   auto spline_ang = std::make_shared<NodesVariablesAll>(n_nodes, k3D, id::base_ang_nodes);
   spline_ang->SetByLinearInterpolation(initial_base_.ang.p(), initial_base_.ang.p(), params_.GetTotalTime());
   spline_ang->AddStartBound(kPos, {X,Y,Z}, initial_base_.ang.p());
   spline_ang->AddStartBound(kVel, {X,Y,Z}, initial_base_.ang.v());
-  spline_ang->AddFinalBound(kPos, params_.bounds_final_ang_pos_, initial_base_.ang.p());
-  spline_ang->AddFinalBound(kVel, params_.bounds_final_ang_vel_, initial_base_.ang.v());
+
+
+  //spline_ang->AddFinalBound(kPos, params_.bounds_final_ang_pos_, initial_base_.ang.p());
+  //spline_ang->AddFinalBound(kVel, params_.bounds_final_ang_vel_, initial_base_.ang.v());
+  GenerateTakeoffTrajectory(spline_lin, spline_ang, jump_duration, initial_base_, params_.GetBasePolyDurations(), takeoff_height, land_heigth, jump_length_, model_.dynamic_model_->g());
+  vars.push_back(spline_lin);
   vars.push_back(spline_ang);
+
+
 
   return vars;
 }
 
 std::vector<NodesVariablesPhaseBased::Ptr>
 NlpFormulation::MakeEndeffectorVariables () const
-{
+{ 
+
   std::vector<NodesVariablesPhaseBased::Ptr> vars;
+  
 
   // Endeffector Motions
   double T = params_.GetTotalTime();
   for (int ee=0; ee<params_.GetEECount(); ee++) {
+
     auto nodes = std::make_shared<NodesVariablesEEMotion>(
                                               params_.GetPhaseCount(ee),
                                               params_.ee_in_contact_at_start_.at(ee),

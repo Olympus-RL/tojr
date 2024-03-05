@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <towr/variables/nodes_variables.h>
+#include <numeric>
 
 namespace towr {
 
@@ -148,6 +149,20 @@ NodesVariables::SetByLinearInterpolation(const VectorXd& initial_val,
     }
   }
 }
+
+void
+NodesVariables::FitToPolynomial(const Polynomial& p, const VecDurations& durations)
+{
+
+  double t = 0.0;
+  for (int n = 0 ; n < nodes_.size(); n++) {
+    towr:State st = p.GetPoint(t);
+    nodes_.at(n).at(kPos) = st.p();
+    nodes_.at(n).at(kVel) = st.v();
+    if (n < nodes_.size() - 1){t += durations.at(n);}
+  }
+}
+
 
 void
 NodesVariables::AddBounds(int node_id, Dx deriv,

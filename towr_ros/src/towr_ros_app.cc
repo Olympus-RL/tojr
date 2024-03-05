@@ -117,8 +117,10 @@ public:
    */
   void SetIpoptParameters(const TowrCommandMsg& msg) override
   {
+
+    std::cout << "Setting IPOPT parameters" << std::endl;
     // the HA-L solvers are alot faster, so consider installing and using
-    //solver_->SetOption("linear_solver", "mumps"); // ma27, ma57
+    optjump_->SetSolverOption("linear_solver", "mumps"); // ma27, ma57
 
     // Analytically defining the derivatives in IFOPT as we do it, makes the
     // problem a lot faster. However, if this becomes too difficult, we can also
@@ -126,20 +128,20 @@ public:
     // this uses numerical derivatives for ALL constraints, there doesn't yet
     // exist an option to turn on numerical derivatives for only some constraint
     // sets.
-    //solver_->SetOption("jacobian_approximation", "exact"); // finite difference-values
+    optjump_->SetSolverOption("jacobian_approximation", "exact"); // finite difference-values
 
     // This is a great to test if the analytical derivatives implemented in are
     // correct. Some derivatives that are correct are still flagged, showing a
     // deviation of 10e-4, which is fine. What to watch out for is deviations > 10e-2.
-    // solver_->SetOption("derivative_test", "first-order");
+    //optjump_->SetSolverOption("derivative_test", "first-order");
 
-    //solver_->SetOption("max_cpu_time", 40.0);
-    //solver_->SetOption("print_level", 5);
+    optjump_->SetSolverOption("max_cpu_time", 40.0);
+    //optjump_->SetSolverOption("print_level", 5);
 
-    //if (msg.play_initialization)
-    //  solver_->SetOption("max_iter", 0);
-    //else
-    //  solver_->SetOption("max_iter", 3000);
+    if (msg.play_initialization)
+      optjump_->SetSolverOption("max_iter", 0);
+    else
+      optjump_->SetSolverOption("max_iter", 3000);
   }
 };
 

@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "state.h"
 #include "nodes_observer.h"
+#include <towr/variables/polynomial.h>
 
 namespace towr {
 
@@ -185,6 +186,8 @@ public:
                                 const VectorXd& final_val,
                                 double t_total);
 
+
+  void FitToPolynomial(const Polynomial& p, const VecDurations& T);
   /**
    * @brief Restricts the first node in the spline.
    * @param deriv Which derivative (pos,vel,...) should be restricted.

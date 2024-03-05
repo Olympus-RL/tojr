@@ -83,7 +83,7 @@ target_include_directories(${PROJECT_NAME}
 enable_testing()
 # example problem solved with IPOPT
 add_executable(${PROJECT_NAME}-example 
-  test/terrain_pars.cc
+  test/optjump_example.cc
 )
 target_link_libraries(${PROJECT_NAME}-example  
   PRIVATE

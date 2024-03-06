@@ -108,33 +108,52 @@ NlpFormulation::MakeBaseVariables (JumpDuration::Ptr jump_duration) const
   int n_nodes = params_.GetBasePolyDurations().size() + 1;
 
   auto spline_lin = std::make_shared<NodesVariablesAll>(n_nodes, k3D, id::base_lin_nodes);
-  // should make new initial positions based on jump height
+  auto spline_ang = std::make_shared<NodesVariablesAll>(n_nodes, k3D, id::base_ang_nodes);
+
   Vector3d takeoff_pos;
-  takeoff_pos(0) = initial_base_.lin.p().x();
-  takeoff_pos(1) = initial_base_.lin.p().y();
-
-  double max_z = terrain_->GetHeight(takeoff_pos(0), takeoff_pos(1)) + model_.kinematic_model_->GetMaximumDeviationFromNominal().z() - model_.kinematic_model_->GetNominalStanceInBase().front().z();
-  double takeoff_height = max_z-0.05;
-  Vector3d landpos = takeoff_pos;
+  Vector3d landpos = initial_base_.lin.p();
   landpos(0) += jump_length_;
-  double land_heigth = terrain_->GetHeight(landpos(0), landpos(1));
 
+  takeoff_pos(1) = initial_base_.lin.p().y();
+  //double max_z = terrain_->GetHeight(takeoff_pos(0), takeoff_pos(1)) + model_.kinematic_model_->GetMaximumDeviationFromNominal().z() - model_.kinematic_model_->GetNominalStanceInBase().front().z();
+  double min_z = 1e6;
+  std::vector<double> ee_slacks_x;
+  ;
+  for (int ee = 0; ee < params_.GetEECount(); ee++) {
+    double max_ee_x = initial_ee_W_.at(ee).x() + model_.kinematic_model_->GetMaximumDeviationFromNominal().x();
+    double slack_x =max_ee_x - initial_ee_W_.at(ee).x();
+    ee_slacks_x.push_back(slack_x);
+    double z = terrain_->GetHeight(initial_ee_W_.at(ee).x(), initial_ee_W_.at(ee).y()) + model_.kinematic_model_->GetMaximumDeviationFromNominal().z() - model_.kinematic_model_->GetNominalStanceInBase().front().z();
+    if (min_z > z) {
+      min_z = z;
+    }
+    assert(slack_x >= 0.0); // endefctor not within bounds
 
+  }
+  double max_x = initial_base_.lin.p().x() + *std::min_element(ee_slacks_x.begin(), ee_slacks_x.end());
+  double takeoff_x = max_x - 0.05;
+  double takeoff_height = min_z-0.05;
+  double land_heigth = terrain_->GetHeight(landpos(0), landpos(1)) + model_.kinematic_model_->GetMaximumDeviationFromNominal().z() - model_.kinematic_model_->GetNominalStanceInBase().front().z() -0.05;
+  
+  GenerateTakeoffTrajectory(
+    spline_lin, 
+    spline_ang, 
+    jump_duration, 
+    initial_base_, 
+    params_.GetBasePolyDurations(), 
+    takeoff_x, 
+    takeoff_height,
+    land_heigth, 
+    jump_length_,
+    model_.dynamic_model_->g()
+  );
   spline_lin->AddStartBound(kPos, {X,Y,Z}, initial_base_.lin.p());
   spline_lin->AddStartBound(kVel, {X,Y,Z}, initial_base_.lin.v());
-  //spline_lin->AddFinalBound(kPos, params_.bounds_final_lin_pos_,   final_base_.lin.p());
-  //spline_lin->AddFinalBound(kVel, params_.bounds_final_lin_vel_, final_base_.lin.v());
-  
-
-  auto spline_ang = std::make_shared<NodesVariablesAll>(n_nodes, k3D, id::base_ang_nodes);
-  spline_ang->SetByLinearInterpolation(initial_base_.ang.p(), initial_base_.ang.p(), params_.GetTotalTime());
   spline_ang->AddStartBound(kPos, {X,Y,Z}, initial_base_.ang.p());
   spline_ang->AddStartBound(kVel, {X,Y,Z}, initial_base_.ang.v());
-
-
-  //spline_ang->AddFinalBound(kPos, params_.bounds_final_ang_pos_, initial_base_.ang.p());
-  //spline_ang->AddFinalBound(kVel, params_.bounds_final_ang_vel_, initial_base_.ang.v());
-  GenerateTakeoffTrajectory(spline_lin, spline_ang, jump_duration, initial_base_, params_.GetBasePolyDurations(), takeoff_height, land_heigth, jump_length_, model_.dynamic_model_->g());
+  spline_ang->AddFinalBound(kVel, params_.bounds_final_ang_vel_, Eigen::Vector3d(0,0,0));
+  //spline_ang->AddFinalBound(kPos, params_.bounds_final_ang_pos_, Eigen::Vector3d(0,0,0));
+  
   vars.push_back(spline_lin);
   vars.push_back(spline_ang);
 

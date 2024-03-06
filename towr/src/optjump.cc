@@ -10,6 +10,7 @@ OptJump::OptJump(const RobotModel& model, const TerrainData& terrain_data){
     terrain_ = std::make_shared<TerrainFromData>(terrain_data);
     //terrain_ = HeightMap::MakeTerrain(HeightMap::FlatID);
     formulation_.terrain_ = terrain_;
+    //formulation_.params_.costs_.push_back(std::pair<Parameters::CostName, double>(Parameters::ForcesCostID, 1.0));
     solver_ = std::make_shared<ifopt::IpoptSolver>();
     
 }
@@ -44,7 +45,6 @@ void OptJump::Solve() {
       formulation_.params_.ee_phase_durations_.push_back({1.0}); // this should be able to modify
       formulation_.params_.ee_in_contact_at_start_.push_back(true);
     }
-  std::cout << "Adding variables, constraints and costs" << std::endl;  
   nlp_ = ifopt::Problem();
   for (auto c : formulation_.GetVariableSets(solution_))
     nlp_.AddVariableSet(c);
@@ -52,17 +52,9 @@ void OptJump::Solve() {
     nlp_.AddConstraintSet(c);
   for (auto c : formulation_.GetCosts())
     nlp_.AddCostSet(c);
-  std::cout << "kuk69" << std::endl;
-  solver_->SetOption("jacobian_approximation", "exact"); // "finite difference-values"
-  std::cout << "kuk70" << std::endl;
 
-  solver_->SetOption("max_cpu_time", 20.0);
-  std::cout << "kuk71" << std::endl;
-
-  //solver_->SetOption("max_iter", 0);
 
   solver_->Solve(nlp_);
-  std::cout << "kuk72" << std::endl;
 }
 
 OptJump::BaseTrajectory OptJump::GetBaseTrajectory(double dt) const {

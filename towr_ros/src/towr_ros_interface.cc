@@ -209,13 +209,8 @@ TowrRosInterface::GetTrajectory () const
   towr::State::VectorXd takeoff_vel = solution.base_linear_->GetPoint(solution.base_linear_->GetTotalTime()).v();
   towr::State::VectorXd takeoff_ang = solution.base_angular_->GetPoint(solution.base_angular_->GetTotalTime()).p();
   
-  xpp::RobotStateCartesian takeoff_state(n_ee);
-  takeoff_state.base_.lin = ToXpp(solution.base_linear_->GetPoint(T));
-  takeoff_state.base_.ang.q  = base_angular.GetQuaternionBaseToWorld(T);
-  takeoff_state.base_.ang.w  = base_angular.GetAngularVelocityInWorld(T);
-  takeoff_state.base_.ang.wd = base_angular.GetAngularAccelerationInWorld(T);
-
-
+  xpp::RobotStateCartesian takeoff_state = trajectory.back();
+  
   t = 0;
   double g = model_.dynamic_model_->g();
   while (t<=T_jump+1e-5) {

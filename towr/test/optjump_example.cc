@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 #include <Eigen/Dense>
+#include <chrono>
+
 
 #include <towr/optjump.h>
 #include <towr/terrain/terrain_data.h>
+#include <towr/terrain/examples/height_map_examples.h>
 #include <towr/terrain/terrain_parser.h>
 #include <towr/models/robot_model.h>
 #include <towr/variables/variable_names.h>
@@ -21,13 +24,13 @@ double num_ee = 4;
 double z_ground = 0.0;
   
 TerrainData terrain_data;
-ParseTerrainData(terrain_data);
+//ParseTerrainData(terrain_data);
 towr::RobotModel model = towr::RobotModel(towr::RobotModel::Olympus);
-towr::OptJump optjump(model, terrain_data);
+towr::HeightMap::Ptr terrain = towr::HeightMap::MakeTerrain(towr::HeightMap::FlatID);
 
 auto nominal_stance_B = model.kinematic_model_->GetNominalStanceInBase();
 double nominal_height = -nominal_stance_B.front().z();
-z_ground = optjump.GetTerrain() -> GetHeight(0.0, 0.0);
+z_ground = terrain -> GetHeight(0.0, 0.0);
 towr::OptJump::Vector3d base_pos(0.0, 0.0, z_ground + nominal_height);
 towr::OptJump::Vector3d base_ang(0.0, 0.0, 0.0);
 towr::OptJump::EEpos initial_ee_pos;
@@ -37,34 +40,21 @@ for (int ee = 0; ee < num_ee; ++ee) {
     initial_ee_pos.push_back(p);
 }
 
-optjump.SetInitialBaseState(base_pos, base_ang);  
-optjump.SetInitialEEState(initial_ee_pos);
-optjump.SetJumpLength(2.0);
-optjump.Solve();
-  
-double dt = 0.1;
-OptJump::BaseTrajectory base_traj = optjump.GetBaseTrajectory(dt);
-OptJump::EETrajectory ee_traj = optjump.GetEETrajectory(dt);
+const int num_runs = 2;
+for (const auto& solver_type : {OptJump::SolverType::IPOPT, OptJump::SolverType::SNOPT}) {
+  OptJump optjump(model, terrain, solver_type);
+  optjump.SetInitialBaseState(base_pos, base_ang);  
+  optjump.SetInitialEEState(initial_ee_pos);
+  optjump.SetJumpLength(2.0);
 
-using namespace std;
-std::cout.precision(2);
-std::cout << fixed;
-std::cout << "\n====================\nQuadruped trajectory:\n====================\n"; 
-double t = 0.0;
-for (int i = 0; i < base_traj.size(); i++) {
-    std::cout << "t=" << t << "\n";
-    std::cout << "Base linear position x,y,z:   \t";
-    std::cout << base_traj.at(i).block<3,1>(0,0).transpose() << "\t[m]" << endl; 
-    std::cout << "Base linear vel x,y,z:  \t";
-    std::cout << base_traj.at(i).block<3,1>(6,0).transpose() << "\t[m]" << endl; 
-    std::cout << "Base Euler roll, pitch, yaw:  \t";
-    Eigen::Vector3d rad = base_traj.at(i).block<3,1>(3,0).transpose();
-    std::cout << (rad/M_PI*180).transpose() << "\t[deg]" << endl; 
-    std::cout << "Base angular vel roll, pitch, yaw:  \t";
-    rad = base_traj.at(i).block<3,1>(9,0).transpose();
-    std::cout << (rad/M_PI*180).transpose() << "\t[deg/s]" << endl;
-    std::cout << endl; 
-    t += dt;
+
+  auto start_time = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < num_runs; i++) {
+      optjump.Solve();
+  }
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+  std::cout << solver_type << " average solve time: "  << duration/static_cast<float>(num_runs) << " milliseconds" << std::endl;
 }
 
   return 0;

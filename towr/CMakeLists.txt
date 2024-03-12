@@ -22,6 +22,7 @@ add_library(${PROJECT_NAME} SHARED
   src/nlp_formulation.cc
   src/parameters.cc
   src/optjump.cc
+  src/vec_optjump.cc
   # variables
   src/nodes_variables.cc
   src/nodes_variables_all.cc
@@ -85,10 +86,12 @@ enable_testing()
 add_executable(${PROJECT_NAME}-example 
   test/optjump_example.cc
 )
+
 target_link_libraries(${PROJECT_NAME}-example  
   PRIVATE
     ${PROJECT_NAME} 
     ifopt::ifopt_ipopt
+    ifopt::ifopt_snopt
 )
 add_test(${PROJECT_NAME}-example ${PROJECT_NAME}-example)
 

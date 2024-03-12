@@ -16,7 +16,7 @@
 
 namespace towr {
 
-class OptJump {
+class VecOptJump {
   public:
     using Matrix = Eigen::MatrixXd;
     using VectorXd = Eigen::VectorXd;
@@ -26,30 +26,31 @@ class OptJump {
     using BaseTrajectory = std::vector<Eigen::Matrix<double,12,1>>;
     using EETrajectory = std::vector<EEpos>;
     using Solver = ifopt::IpoptSolver::Ptr;
-    using Ptr = std::shared_ptr<OptJump>;
+    using Ptr = std::shared_ptr<VecOptJump>;
 
-    OptJump(const RobotModel& model, const TerrainData& terrain_data);
-    OptJump(const double mass, const Inertia& inertia, const TerrainData& terrain_data);
-    OptJump(const double mass, const Inertia& inertia, const VectorXd& terrain_x, const VectorXd& terrain_y, const VectorXd& terrain_z);
+    VecOptJump(const RobotModel& model, const TerrainData& terrain_data,int num_envs);
+    VecOptJump(const double mass, const Inertia& inertia, const TerrainData& terrain_data);
+    VecOptJump(const double mass, const Inertia& inertia, const VectorXd& terrain_x, const VectorXd& terrain_y, const VectorXd& terrain_z);
     
-    virtual ~OptJump() = default;
+    virtual ~VecOptJump() = default;
     void SetInitialBaseStates(std::vector<Vector3d> pos, std::vector<Vector3d> ang);
     void SetInitialEEStates(std::vector<EEpos>  initial_ee_pos);
     void SetJumpLengths(const std::vector<double>& lengths);
     void Solve();
+    HeightMap::Ptr GetTerrain() const {return terrain_;};
    
   private:
+    int num_envs_;
     std::vector<NlpFormulation> formulations_;
     RobotModel model_;
     std::vector<BaseState> initial_base_;
     std::vector<EEpos> initial_ee_pos_;
     std::vector<SplineHolder> solutions_;
-    double jump_length_;
-    ifopt::Problem nlp_;
+    std::vector<double> jump_lengths_;
     std::vector<Solver> solvers_;
     HeightMap::Ptr terrain_;
 };
 
 } /* namespace towr */
 
-#endif /* VEC_OPT_JUMP_H_ *
+#endif /* VEC_OPT_JUMP_H_ */

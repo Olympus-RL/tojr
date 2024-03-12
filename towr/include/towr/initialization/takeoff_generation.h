@@ -77,12 +77,6 @@ inline void GenerateTakeoffTrajectory(
     Eigen::VectorXd duration_vars(1);
     duration_vars << t_flight;
     jump_duration -> SetVariables(duration_vars);
-
-    double est_land_h = takeoff_height + takeoff_vel(2)*t_flight - 0.5*gravity*t_flight*t_flight;
-    std::cout << "Estimated landing height: " << est_land_h << std::endl;
-    std::cout<< "Landing height: " << land_height << std::endl;
-    //assert(std::abs(est_land_h - land_height)<1e-6);
-
 };
 
 

@@ -5,6 +5,7 @@
 #include <ifopt/constraint_set.h>
 #include <ifopt/cost_term.h>
 #include <ifopt/ipopt_solver.h>
+#include <ifopt/snopt_solver.h>
 
 #include <towr/variables/spline_holder.h>
 #include <towr/models/robot_model.h>
@@ -25,12 +26,19 @@ class OptJump {
     using EEpos = std::vector<Vector3d>;
     using BaseTrajectory = std::vector<Eigen::Matrix<double,12,1>>;
     using EETrajectory = std::vector<EEpos>;
-    using Solver = ifopt::IpoptSolver::Ptr;
+    using IpoptSolver = ifopt::IpoptSolver::Ptr;
+    using SnoptSolver = ifopt::SnoptSolver::Ptr;
     using Ptr = std::shared_ptr<OptJump>;
 
-    OptJump(const RobotModel& model, const TerrainData& terrain_data);
-    OptJump(const double mass, const Inertia& inertia, const TerrainData& terrain_data);
-    OptJump(const double mass, const Inertia& inertia, const VectorXd& terrain_x, const VectorXd& terrain_y, const VectorXd& terrain_z);
+    enum SolverType {
+      IPOPT,
+      SNOPT
+    };
+    
+    OptJump(const RobotModel& model, HeightMap::Ptr terrain, SolverType solver_type);
+    //OptJump(const RobotModel& model, const TerrainData& terrain_data);
+    //OptJump(const double mass, const Inertia& inertia, const TerrainData& terrain_data);
+    //OptJump(const double mass, const Inertia& inertia, const VectorXd& terrain_x, const VectorXd& terrain_y, const VectorXd& terrain_z);
     
     virtual ~OptJump() = default;
     void SetInitialBaseState(Vector3d pos, Vector3d ang);
@@ -57,8 +65,13 @@ class OptJump {
     SplineHolder solution_;
     double jump_length_;
     ifopt::Problem nlp_;
-    Solver solver_;
+    IpoptSolver ipopt_solver_;
+    SnoptSolver snopt_solver_;
     HeightMap::Ptr terrain_;
+    SolverType solver_type_;
+
+    void InitIpopt();
+    void InitSnopt();
 };
 
 } /* namespace towr */

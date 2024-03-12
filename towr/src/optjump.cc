@@ -5,24 +5,68 @@
 
 namespace towr {
 
-OptJump::OptJump(const RobotModel& model, const TerrainData& terrain_data){
-    formulation_.model_ = model;
-    terrain_ = std::make_shared<TerrainFromData>(terrain_data);
-    //terrain_ = HeightMap::MakeTerrain(HeightMap::FlatID);
-    formulation_.terrain_ = terrain_;
-    //formulation_.params_.costs_.push_back(std::pair<Parameters::CostName, double>(Parameters::ForcesCostID, 1.0));
-    solver_ = std::make_shared<ifopt::IpoptSolver>();
+OptJump::OptJump(const RobotModel& model, HeightMap::Ptr terrain, SolverType solver_type) {
+  formulation_.model_ = model;
+  terrain_ = terrain;
+  formulation_.terrain_ = terrain_;
+  solver_type_ = solver_type;
+  
+  switch (solver_type_)
+  {
+  case SolverType::IPOPT:
+    InitIpopt();
+    break;
+  case SolverType::SNOPT:
+    InitSnopt();
+    break;
+  default:
+    assert(false); // unknown solver type
+  }
+
+}
+
+    
+void OptJump::SetSolverOption(const std::string& name, const std::string& value) {
+    switch (solver_type_)
+    {
+    case SolverType::IPOPT:
+      ipopt_solver_->SetOption(name, value);
+      break;
+    case SolverType::SNOPT:
+      snopt_solver_->SetOption(name, value);
+      break;
+    default:
+      break;
+    }
     
 }
-void OptJump::SetSolverOption(const std::string& name, const std::string& value) {
-    solver_->SetOption(name, value);
-}
 void OptJump::SetSolverOption(const std::string& name, int value) {
-    solver_->SetOption(name, value);
+    switch (solver_type_)
+    {
+    case SolverType::IPOPT:
+      ipopt_solver_->SetOption(name, value);
+      break;
+    case SolverType::SNOPT:
+      snopt_solver_->SetOption(name, value);
+      break;
+    default:
+      break;
+    }
 }
 void OptJump::SetSolverOption(const std::string& name, double value) {
-    solver_->SetOption(name, value);
+    switch (solver_type_)
+    {
+    case SolverType::IPOPT:
+      ipopt_solver_->SetOption(name, value);
+      break;
+    case SolverType::SNOPT:
+      snopt_solver_->SetOption(name, value);
+      break;
+    default:
+      break;
+    }
 }
+
 void OptJump::SetInitialBaseState(const Vector3d pos, const Vector3d ang) {
     initial_base_.lin.at(kPos) = pos;
     initial_base_.ang.at(kPos) = ang;
@@ -34,7 +78,6 @@ void OptJump::SetJumpLength(const double length) {
     jump_length_ = length;
 }
 void OptJump::Solve() {
-    std::cout << "Solving jump" << std::endl;
     formulation_.jump_length_ = jump_length_;
     formulation_.initial_base_ = initial_base_;
     formulation_.initial_ee_W_ = initial_ee_pos_;
@@ -54,7 +97,18 @@ void OptJump::Solve() {
     nlp_.AddCostSet(c);
 
 
-  solver_->Solve(nlp_);
+  switch (solver_type_)
+  {
+  case SolverType::IPOPT:
+    ipopt_solver_->Solve(nlp_);
+    break;
+  case SolverType::SNOPT:
+    snopt_solver_->Solve(nlp_);
+    InitSnopt(); //for some reson you have to do this
+    break;
+  default:
+    break;
+  }
 }
 
 OptJump::BaseTrajectory OptJump::GetBaseTrajectory(double dt) const {
@@ -89,5 +143,14 @@ double OptJump::GetTakeoffTime() const {
 
 double OptJump::GetJumpDuration() const {
   return nlp_.GetOptVariables() -> GetComponent<towr::JumpDuration>("jump_duration") -> GetValues()(0);
+}
+
+void OptJump::InitIpopt() {
+  ipopt_solver_ = std::make_shared<ifopt::IpoptSolver>();
+  ipopt_solver_->SetOption("linear_solver", "ma57");
+}
+
+void OptJump::InitSnopt() {
+  snopt_solver_ = std::make_shared<ifopt::SnoptSolver>();
 }
 } /* namespace towr */

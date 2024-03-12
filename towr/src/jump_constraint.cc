@@ -101,6 +101,7 @@ JumpConstraint::FillJacobianBlock (std::string var_set, Jacobian& jac) const
       jac_con_pos.insert(i,1) = -hy;
       jac_con_pos.insert(i,2) = 1;
       jac_con_vel.insert(i,0) = t*hx;
+      jac_con_vel.insert(i,2) = t;
       
     }
 

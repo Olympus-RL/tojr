@@ -40,21 +40,28 @@ for (int ee = 0; ee < num_ee; ++ee) {
     initial_ee_pos.push_back(p);
 }
 
-const int num_runs = 2;
-for (const auto& solver_type : {OptJump::SolverType::IPOPT, OptJump::SolverType::SNOPT}) {
+const int num_runs = 100;
+for (const auto& solver_type : {OptJump::SolverType::IPOPT}) {
   OptJump optjump(model, terrain, solver_type);
   optjump.SetInitialBaseState(base_pos, base_ang);  
   optjump.SetInitialEEState(initial_ee_pos);
   optjump.SetJumpLength(2.0);
+  optjump.SetSolverOption("print_level", 0);
+
+  for (std::string lin_solver : {"ma27","ma57","ma77","ma86","ma97"}){
+  optjump.SetSolverOption("linear_solver", lin_solver);
+  //optjump.SetSolverOption("print_timing_statistics", "yes");}
 
 
   auto start_time = std::chrono::high_resolution_clock::now();
   for (int i = 0; i < num_runs; i++) {
+       
       optjump.Solve();
   }
   auto end_time = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-  std::cout << solver_type << " average solve time: "  << duration/static_cast<float>(num_runs) << " milliseconds" << std::endl;
+  std::cout << lin_solver << " average solve time: "  << duration/static_cast<float>(num_runs) << " milliseconds" << std::endl;
+}
 }
 
   return 0;

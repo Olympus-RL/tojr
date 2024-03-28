@@ -60,12 +60,18 @@ NodeSpline::GetNodeVariablesCount() const
 }
 
 NodeSpline::Jacobian
-NodeSpline::GetJacobianWrtNodes (double t_global, Dx dxdt) const
+NodeSpline::GetJacobianWrtNodes (double t_global, Dx dxdt) 
 {
+  if(jacs_.at(dxdt).find(t_global) != jacs_.at(dxdt).end()){
+    return jacs_.at(dxdt).at(t_global);
+  }
   int id; double t_local;
   std::tie(id, t_local) = GetLocalTime(t_global, GetPolyDurations());
 
-  return GetJacobianWrtNodes(id, t_local, dxdt);
+  Jacobian jac = GetJacobianWrtNodes(id, t_local, dxdt);
+  Jacobian jac_copy = jac;
+  jacs_.at(dxdt)[t_global] = jac_copy;
+  return jac;
 }
 
 NodeSpline::Jacobian

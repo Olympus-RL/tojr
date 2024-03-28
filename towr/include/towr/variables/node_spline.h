@@ -31,6 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TOWR_TOWR_SRC_NODE_SPLINE_H_
 
 #include <memory>
+#include <unordered_map>
+#include <array>
+
 #include <Eigen/Sparse>
 
 #include "spline.h"
@@ -51,13 +54,15 @@ public:
   using Ptr = std::shared_ptr<NodeSpline>;
   using Jacobian = Eigen::SparseMatrix<double, Eigen::RowMajor>;
 
+  using JacMap = std::array<std::unordered_map<double, Jacobian>,4>;
+
   /**
    * @brief Constructs a spline with constant durations.
    * @param nodes_variables The optimized node variables (pos, vel).
    * @param phase_durations The fixed duration of each phase.
    */
   NodeSpline(NodeSubjectPtr const node_variables,
-             const VecTimes& polynomial_durations);
+         const VecTimes& polynomial_durations);
   ~NodeSpline() = default;
 
   /**
@@ -73,7 +78,7 @@ public:
    *             p: Number of dimensions of the spline
    *             n: Number of optimized node variables.
    */
-  Jacobian GetJacobianWrtNodes(double t, Dx dxdt) const;
+  Jacobian GetJacobianWrtNodes(double t, Dx dxdt);
 
   /**
    * @brief How the spline changes when the node values change.
@@ -106,6 +111,7 @@ protected:
    * The size and non-zero elements of the Jacobian of the position w.r.t nodes.
    */
   mutable Jacobian jac_wrt_nodes_structure_;
+  JacMap jacs_;
 
   /**
    * @brief Fills specific elements of the Jacobian with respect to nodes.

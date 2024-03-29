@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/example.dir/python/test.cpp.o  -o example  -Wl,-rpath,/usr/local/lib -ltowr /usr/local/lib/libifopt_ipopt.so /usr/local/lib/libifopt_snopt.so /usr/local/lib/libifopt_core.so 

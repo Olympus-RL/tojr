@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/bolivar/Olympus-ws/towr_ros_catkin/src/tojr/bindings/python/optjump_python.cpp
+pybind11/pybind11.h
+-
+pybind11/eigen.h
+-
+pybind11/stl.h
+-
+towr/optjump.h
+-
+

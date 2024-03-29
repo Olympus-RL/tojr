@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
-project(towr VERSION 1.3.2)
+cmake_minimum_required(VERSION 3.5...3.27)
+project(towr VERSION 1.3.2 LANGUAGES CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 find_package(ifopt 2.0.1 REQUIRED)
 find_package(libInterpolate REQUIRED)
+find_package(Eigen3 REQUIRED)
 
+
+
+#add_subdirectory(extern/pybind11)
 
 ###########
 ## Build ##
@@ -67,14 +71,23 @@ add_library(${PROJECT_NAME} SHARED
   src/euler_converter.cc
   src/phase_durations_observer.cc
 )
+
+#pybind11_add_module(example example.cpp)
+#pybind11_add_module(optjump src/optjump_python.cpp)
+
+
+
 target_link_libraries(${PROJECT_NAME} 
   PUBLIC 
     ifopt::ifopt_core
+    Eigen3::Eigen
+    
 )
 target_include_directories(${PROJECT_NAME} 
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    /usr/include/eigen3
 )
 
 

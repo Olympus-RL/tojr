@@ -67,6 +67,8 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "core": "cpp",
+        "dense": "cpp"
     }
 }

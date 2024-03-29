@@ -24,10 +24,10 @@ double num_ee = 4;
 double z_ground = 0.0;
   
 TerrainData terrain_data;
-ParseTerrainData(terrain_data);
+//ParseTerrainData(terrain_data);
 towr::RobotModel model = towr::RobotModel(towr::RobotModel::Olympus);
-//towr::HeightMap::Ptr terrain = towr::HeightMap::MakeTerrain(towr::HeightMap::FlatID);
-towr::HeightMap::Ptr terrain = std::make_shared<towr::TerrainFromData>(terrain_data);
+towr::HeightMap::Ptr terrain = towr::HeightMap::MakeTerrain(towr::HeightMap::FlatID);
+//towr::HeightMap::Ptr terrain = std::make_shared<towr::TerrainFromData>(terrain_data);
 
 
 auto nominal_stance_B = model.kinematic_model_->GetNominalStanceInBase();

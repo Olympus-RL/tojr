@@ -35,10 +35,9 @@ class OptJump {
       SNOPT
     };
     
+
+    OptJump();
     OptJump(const RobotModel& model, HeightMap::Ptr terrain, SolverType solver_type);
-    //OptJump(const RobotModel& model, const TerrainData& terrain_data);
-    //OptJump(const double mass, const Inertia& inertia, const TerrainData& terrain_data);
-    //OptJump(const double mass, const Inertia& inertia, const VectorXd& terrain_x, const VectorXd& terrain_y, const VectorXd& terrain_z);
     
     virtual ~OptJump() = default;
     void SetInitialBaseState(Vector3d pos, Vector3d ang);

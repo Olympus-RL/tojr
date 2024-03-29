@@ -5,6 +5,10 @@
 
 namespace towr {
 
+OptJump::OptJump() {
+  OptJump(RobotModel(RobotModel::Olympus),HeightMap::MakeTerrain(HeightMap::FlatID),SolverType::IPOPT);
+}
+
 OptJump::OptJump(const RobotModel& model, HeightMap::Ptr terrain, SolverType solver_type) {
   formulation_.model_ = model;
   terrain_ = terrain;

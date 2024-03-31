@@ -5,13 +5,15 @@
 
 namespace towr {
 
-OptJump::OptJump() {
-  OptJump(RobotModel(RobotModel::Olympus),HeightMap::MakeTerrain(HeightMap::FlatID),SolverType::IPOPT);
+OptJump::OptJump() : OptJump(RobotModel(RobotModel::Olympus), HeightMap::MakeTerrain(HeightMap::FlatID), SolverType::IPOPT) {
+    // Delegate to the other constructor
 }
 
 OptJump::OptJump(const RobotModel& model, HeightMap::Ptr terrain, SolverType solver_type) {
   formulation_.model_ = model;
   terrain_ = terrain;
+  double h = terrain_->GetHeight(0.0,0.0);
+  std::cout << "Height at 0,0: " << h << std::endl;
   formulation_.terrain_ = terrain_;
   solver_type_ = solver_type;
   
@@ -82,9 +84,9 @@ void OptJump::SetJumpLength(const double length) {
     jump_length_ = length;
 }
 void OptJump::Solve() {
-    formulation_.jump_length_ = jump_length_;
-    formulation_.initial_base_ = initial_base_;
-    formulation_.initial_ee_W_ = initial_ee_pos_;
+  formulation_.jump_length_ = jump_length_;
+  formulation_.initial_base_ = initial_base_;
+  formulation_.initial_ee_W_ = initial_ee_pos_;
 	int num_ee = initial_ee_pos_.size();
   formulation_.params_.ee_phase_durations_.clear();
   formulation_.params_.ee_in_contact_at_start_.clear();

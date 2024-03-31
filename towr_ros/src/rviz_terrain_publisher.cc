@@ -44,7 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace towr {
 
 static ros::Publisher rviz_pub;
-std::shared_ptr<TerrainFromData> terrain_ =  MakeTerrainFromData();
+//std::shared_ptr<TerrainFromData> terrain_ =  MakeTerrainFromData();
+HeightMap::Ptr terrain_ = HeightMap::MakeTerrain(HeightMap::FlatID);
 
 
 void UserCommandCallback(const towr_ros::TowrCommand& msg_in)

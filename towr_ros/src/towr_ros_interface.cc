@@ -68,12 +68,14 @@ TowrRosInterface::TowrRosInterface ()
   
   TerrainData terrain_data;
   std::cout << "TowrRosInterface_pre_terrain" << std::endl;
-  ParseTerrainData(terrain_data);
+  //ParseTerrainData(terrain_data);
   std::cout << "TowrRosInterface_terrain" << std::endl;
 
   towr::RobotModel model = towr::RobotModel(towr::RobotModel::Olympus);
+  terrain_ = HeightMap::MakeTerrain(HeightMap::FlatID);
+
   std::cout << "TowrRosInterface_model" << std::endl;
-  optjump_ = std::make_shared<OptJump>(model, terrain_data);
+  optjump_ = std::make_shared<OptJump>(model,terrain_,OptJump::SolverType::IPOPT);
   std::cout << "TowrRosInterface_optjump" << std::endl;
   terrain_ = optjump_->GetTerrain();
 
@@ -110,6 +112,7 @@ TowrRosInterface::UserCommandCallback(const TowrCommandMsg& msg)
   // solver parameters
   SetIpoptParameters(msg);
   // visualization
+  std::cout << "Publishing initial state" << std::endl;
   PublishInitialState();
 
   // Defaults to /home/user/.ros/
@@ -263,7 +266,7 @@ TowrRosInterface::BuildRobotParametersMsg(const RobotModel& model) const
   }
 
   params_msg.base_mass = model.dynamic_model_->m();
-
+  std::cout << "BuildRobotParametersMsg_end" << std::endl;
   return params_msg;
 }
 

@@ -55,7 +55,8 @@ for (int i = 0; i < num_runs; i++) {
 }
 
 for (const auto& solver_type : {OptJump::SolverType::IPOPT}) {
-    OptJump optjump(model, terrain, solver_type);
+    //OptJump optjump(model, terrain, solver_type);
+    OptJump optjump;
     optjump.SetInitialBaseState(base_pos, base_ang);  
     optjump.SetInitialEEState(initial_ee_pos);
    

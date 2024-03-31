@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <towr/initialization/gait_generator.h>
 #include <towr_ros/towr_ros_interface.h>
+#include <iostream>
 
 
 namespace towr {
@@ -65,14 +66,21 @@ public:
   //W_R_B.col(1) = y_tangent;
   //W_R_B.col(2) = normal;
 
-  
+  std::cout << "Setting initial state" << std::endl;
+  double h = terrain_->GetHeight(x0_ground, y0_ground);
+
   auto nominal_stance_B = model_.kinematic_model_->GetNominalStanceInBase();
+  std::cout << 1 << std::endl;
   double nominal_height = -nominal_stance_B.front().z();
   
-  double h = terrain_->GetHeight(x0_ground, y0_ground);
+  std::cout << 2 << std::endl;
+  std::cout << terrain_ << std::endl;
+  //double h = terrain_->GetHeight(x0_ground, y0_ground);
+  std::cout << 2.1 << std::endl;
   Eigen::Vector3d x0_W(x0_ground, y0_ground,h+ nominal_height);
+  std::cout << 2.2 << std::endl;
   Eigen::Vector3d rpy(0,0,0);
-  optjump_ -> SetInitialBaseState(x0_W, rpy);
+  std::cout << 3 << std::endl;
 
   int n_ee = 4;
   OptJump::EEpos initial_ee_W;
@@ -82,6 +90,8 @@ public:
     initial_ee_W.push_back(ee_w);
   }
 
+  std::cout << 4 << std::endl;
+  optjump_ -> SetInitialBaseState(x0_W, rpy);
   optjump_ -> SetInitialEEState(initial_ee_W);
   
   initial_base_pos_ = x0_W;
@@ -120,7 +130,7 @@ public:
 
     std::cout << "Setting IPOPT parameters" << std::endl;
     // the HA-L solvers are alot faster, so consider installing and using
-    optjump_->SetSolverOption("linear_solver", "mumps"); // ma27, ma57
+    optjump_->SetSolverOption("linear_solver", "ma57"); // ma27, ma57
 
     // Analytically defining the derivatives in IFOPT as we do it, makes the
     // problem a lot faster. However, if this becomes too difficult, we can also
@@ -136,7 +146,8 @@ public:
     //optjump_->SetSolverOption("derivative_test", "first-order");
 
     optjump_->SetSolverOption("max_cpu_time", 40.0);
-    //optjump_->SetSolverOption("print_level", 5);
+    optjump_->SetSolverOption("print_level", 5);
+    optjump_ -> SetSolverOption("tol")
 
     if (msg.play_initialization)
       optjump_->SetSolverOption("max_iter", 0);

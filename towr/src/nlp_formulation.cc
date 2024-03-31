@@ -70,7 +70,7 @@ NlpFormulation::GetVariableSets (SplineHolder& spline_holder)
   VariablePtrVec vars;
   auto jump_duration = MakeJumpDurationVariables();
   vars.insert(vars.end(), jump_duration.begin(), jump_duration.end());
-  auto base_motion = MakeBaseVariables(jump_duration.at(0)); // Fix: change jump_duration(0) to jump_duration->at(0)
+  auto base_motion = MakeBaseVariables(jump_duration.at(0));
   vars.insert(vars.end(), base_motion.begin(), base_motion.end());
 
   auto ee_motion = MakeEndeffectorVariables();

@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG -fPIC -fvisibility=hidden   -flto -fno-fat-lto-objects
 
 CXX_DEFINES = -Dtest_EXPORTS
 
-CXX_INCLUDES = -isystem /usr/include/python3.8 -isystem /usr/include/eigen3 
+CXX_INCLUDES = -I/home/bolivar/Olympus-ws/towr_ros_catkin/src/tojr/bindings/../towr/include -isystem /usr/local/include/python3.10 -isystem /usr/include/eigen3 
 

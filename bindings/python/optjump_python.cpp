@@ -23,8 +23,9 @@ PYBIND11_MODULE(opt_jump, m) {
         .def("set_initial_EE_state", &OptJump::SetInitialEEState)
         .def("set_jump_length", &OptJump::SetJumpLength)
         .def("solve", &OptJump::Solve)
-        .def("get_base_trajectory", &OptJump::GetBaseTrajectory)
-        .def("get_EE_trajectory", &OptJump::GetEETrajectory);
+        .def("set_takeoff_duration", &OptJump::SetTakeoffDuration)
+        .def("get_base_state", &OptJump::GetBaseState)
+        .def("get_EE_pos", &OptJump::GetEEPos);
 }
 
 } // namespace towr

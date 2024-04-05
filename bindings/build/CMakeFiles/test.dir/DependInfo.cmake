@@ -15,12 +15,14 @@ set(CMAKE_TARGET_DEFINITIONS_CXX
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
-  "/usr/include/python3.8"
+  "../../towr/include"
+  "/usr/local/include/python3.10"
   "/usr/include/eigen3"
   )
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
+  "/home/bolivar/Olympus-ws/towr_ros_catkin/src/tojr/bindings/build/CMakeFiles/towr.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

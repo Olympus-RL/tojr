@@ -36,10 +36,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/local/share/ifopt/cmake/ifopt_ipopt-targets.cmake"
   "/usr/local/share/ifopt/cmake/ifopt_snopt-targets-release.cmake"
   "/usr/local/share/ifopt/cmake/ifopt_snopt-targets.cmake"
-  "/usr/local/share/towr/cmake/towr-config-version.cmake"
-  "/usr/local/share/towr/cmake/towr-config.cmake"
-  "/usr/local/share/towr/cmake/towr-targets-release.cmake"
-  "/usr/local/share/towr/cmake/towr-targets.cmake"
   "/usr/share/cmake-3.16/Modules/CMakeCXXCompiler.cmake.in"
   "/usr/share/cmake-3.16/Modules/CMakeCXXCompilerABI.cpp"
   "/usr/share/cmake-3.16/Modules/CMakeCXXInformation.cmake"
@@ -134,4 +130,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/test.dir/DependInfo.cmake"
   "CMakeFiles/opt_jump.dir/DependInfo.cmake"
+  "CMakeFiles/towr.dir/DependInfo.cmake"
   )

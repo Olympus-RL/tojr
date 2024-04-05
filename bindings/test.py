@@ -23,4 +23,4 @@ op.set_initial_base_state(x_0, e_0)
 op.set_jump_length(2.0)
 op.set_initial_EE_state(E)
 
-op.solve()
+#op.solve()

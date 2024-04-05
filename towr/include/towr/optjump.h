@@ -24,12 +24,13 @@ class OptJump {
     using Vector3d = Eigen::Vector3d;
     using Inertia = Eigen::Matrix3d;
     using EEpos = std::vector<Vector3d>;
-    using BaseTrajectory = std::vector<Eigen::Matrix<double,12,1>>;
+    using StateVector = Eigen::Matrix<double,12,1>;
+    using BaseTrajectory = std::vector<StateVector>;
     using EETrajectory = std::vector<EEpos>;
     using IpoptSolver = ifopt::IpoptSolver::Ptr;
     using SnoptSolver = ifopt::SnoptSolver::Ptr;
     using Ptr = std::shared_ptr<OptJump>;
-
+    
     enum SolverType {
       IPOPT,
       SNOPT
@@ -40,10 +41,10 @@ class OptJump {
     OptJump(const RobotModel& model, HeightMap::Ptr terrain, SolverType solver_type);
     
     virtual ~OptJump() = default;
-    void SetInitialBaseState(Vector3d pos, Vector3d ang);
-    void SetInitialEEState(EEpos initial_ee_pos);
-    void SetJumpLength(const double length);
-    void Solve();
+    
+    bool Solve();
+    StateVector GetBaseState(double t) const;
+    EEpos GetEEPos(double t) const;
     BaseTrajectory GetBaseTrajectory(double dt) const;
     EETrajectory GetEETrajectory(double dt) const;
     double GetTakeoffTime() const;
@@ -51,7 +52,12 @@ class OptJump {
     const SplineHolder& GetSolution() const{return solution_;};
     HeightMap::Ptr GetTerrain() const{return terrain_;};
     ifopt::Problem& GetNlp() {return nlp_;};
+    
 
+    void SetInitialBaseState(Vector3d pos, Vector3d ang);
+    void SetInitialEEState(EEpos initial_ee_pos);
+    void SetJumpLength(const double length);
+    void SetTakeoffDuration(const double duration);
     void SetSolverOption(const std::string& name, const std::string& value);
     void SetSolverOption(const std::string& name, int value);
     void SetSolverOption(const std::string& name, double value);
@@ -63,6 +69,7 @@ class OptJump {
     EEpos initial_ee_pos_;
     SplineHolder solution_;
     double jump_length_;
+    double takeoff_duration_;
     ifopt::Problem nlp_;
     IpoptSolver ipopt_solver_;
     SnoptSolver snopt_solver_;

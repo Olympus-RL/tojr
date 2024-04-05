@@ -40,16 +40,19 @@ class OlympusKinematicModel : public KinematicModel {
 public:
   OlympusKinematicModel () : KinematicModel(4)
   {
-    const double x_nominal_b = 0.34;
-    const double y_nominal_b = 0.19;
-    const double z_nominal_b = -0.32;
+    const double x_nominal_f = 0.256;
+    const double x_nominal_b = 0.255;
+    const double y_nominal_f = 0.162;
+    const double y_nominal_b = 0.2073;
+    const double z_nominal_f = -0.37;
+    const double z_nominal_b = -0.36;
 
     nominal_stance_.at(LF) <<  x_nominal_b,   y_nominal_b, z_nominal_b;
     nominal_stance_.at(RF) <<  x_nominal_b,  -y_nominal_b, z_nominal_b;
     nominal_stance_.at(LH) << -x_nominal_b,   y_nominal_b, z_nominal_b;
     nominal_stance_.at(RH) << -x_nominal_b,  -y_nominal_b, z_nominal_b;
 
-    max_dev_from_nominal_ << 0.15, 0.1, 0.20;
+    max_dev_from_nominal_ << 0.15, 0.1, 0.16;
   }
 };
 

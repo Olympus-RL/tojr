@@ -215,10 +215,10 @@ PYBIND11_PYTHONLIBS_OVERWRITE:BOOL=ON
 PYBIND11_PYTHON_VERSION:STRING=
 
 //Path to a program.
-PYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3
+PYTHON_EXECUTABLE:FILEPATH=/usr/local/bin/python3.10
 
 //Path to a library.
-PYTHON_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/libpython3.8.so
+PYTHON_LIBRARY:FILEPATH=/usr/local/lib/libpython3.10.a
 
 //The directory containing a CMake configuration file for boost_headers.
 boost_headers_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/boost_headers-1.71.0
@@ -231,9 +231,6 @@ libInterpolate_DIR:PATH=/usr/local/lib/cmake/libInterpolate
 
 //The directory containing a CMake configuration file for pybind11.
 pybind11_DIR:PATH=/usr/local/share/cmake/pybind11
-
-//The directory containing a CMake configuration file for towr.
-towr_DIR:PATH=/usr/local/share/towr/cmake
 
 //Value Computed by CMake
 towr_python_BINARY_DIR:STATIC=/home/bolivar/Olympus-ws/towr_ros_catkin/src/tojr/bindings/build
@@ -378,27 +375,27 @@ CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Boost
 FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[/usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake][c ][v1.71.0()]
 //Details about finding PYTHON
-FIND_PACKAGE_MESSAGE_DETAILS_PYTHON:INTERNAL=/usr/bin/python33.8.10
+FIND_PACKAGE_MESSAGE_DETAILS_PYTHON:INTERNAL=/usr/local/bin/python3.103.10.13
 //Details about finding PythonInterp
-FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp:INTERNAL=[/usr/bin/python3][v3.8.10(3.6)]
+FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp:INTERNAL=[/usr/local/bin/python3.10][v3.10.13(3.6)]
 //Test HAS_FLTO
 HAS_FLTO:INTERNAL=1
 //ADVANCED property for variable: PYTHON_EXECUTABLE
 PYTHON_EXECUTABLE-ADVANCED:INTERNAL=1
-PYTHON_INCLUDE_DIRS:INTERNAL=/usr/include/python3.8
+PYTHON_INCLUDE_DIRS:INTERNAL=/usr/local/include/python3.10
 PYTHON_IS_DEBUG:INTERNAL=0
-PYTHON_LIBRARIES:INTERNAL=/usr/lib/x86_64-linux-gnu/libpython3.8.so
+PYTHON_LIBRARIES:INTERNAL=/usr/local/lib/libpython3.10.a
 //ADVANCED property for variable: PYTHON_LIBRARY
 PYTHON_LIBRARY-ADVANCED:INTERNAL=1
-PYTHON_MODULE_EXTENSION:INTERNAL=.cpython-38-x86_64-linux-gnu.so
+PYTHON_MODULE_EXTENSION:INTERNAL=.cpython-310-x86_64-linux-gnu.so
 PYTHON_MODULE_PREFIX:INTERNAL=
-PYTHON_VERSION:INTERNAL=3.8.10
+PYTHON_VERSION:INTERNAL=3.10.13
 PYTHON_VERSION_MAJOR:INTERNAL=3
-PYTHON_VERSION_MINOR:INTERNAL=8
+PYTHON_VERSION_MINOR:INTERNAL=10
 Python_ADDITIONAL_VERSIONS:INTERNAL=3.11;3.10;3.9;3.8;3.7;3.6
 _Python:INTERNAL=PYTHON
 //ADVANCED property for variable: boost_headers_DIR
 boost_headers_DIR-ADVANCED:INTERNAL=1
 //Directories where pybind11 and possibly Python headers are located
-pybind11_INCLUDE_DIRS:INTERNAL=/usr/local/include;/usr/include/python3.8
+pybind11_INCLUDE_DIRS:INTERNAL=/usr/local/include;/usr/local/include/python3.10
 

@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC  -flto -shared  -o optjump.cpython-38-x86_64-linux-gnu.so CMakeFiles/optjump.dir/python/optjump_python.cpp.o 
